@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<taskInfo version="1.0">
+    <info name="url" description="The URL of the MS Azure government API.">https://management.core.usgovcloudapi.net</info>
+</taskInfo>

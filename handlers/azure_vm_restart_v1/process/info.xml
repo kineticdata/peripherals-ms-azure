@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<taskInfo version="1.0">
+    <info name="site" description="The location of the Jira site. NOTE: If you are not using SSL on your site, your username and password will sent insecurely.">https://localhost:8080</info>
+    <info name="username" description="Username for the desired Jira account."/>
+    <info name="password" type="encrypted" description="Password for the desired Jira account."></info>
+    <info name="enable_debug_logging" description="Enable debug logging if the value is set to 'Yes'.">No</info>
+</taskInfo>

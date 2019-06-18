@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_vm_retrieve" name="Azure VM Retrieve" schema_version="1.0" version="1">
+    <author>support@kineticdata.com</author>
+    <description>This handler retrieves information about an Azure VM.</description>
+    <helpurl></helpurl>
+    <visible>true</visible>
+    <deferrable>false</deferrable>
+    <parameters>
+        <parameter id="subscription_id" label="Subscription ID" required="true"
+            tooltip="The Azure Subscription ID."/>
+        <parameter id="vm_deployment" label="VM Deployment" required="true"
+            tooltip="The Name of the Virtual Machine Deployment."/>
+        <parameter id="vm_name" label="VM Name" required="true"
+            tooltip="The Name of the Virtual Machine."/>
+        <parameter id="cloud_service_name" label="Cloud Service Name" required="true"
+            tooltip="The Name of the Virtual Machine."/>
+    </parameters>
+    <handler name="azure_vm_retrieve" version="1">
+        <infos>
+            <info name="url">&lt;%= @info['url'] %&gt;</info>
+            <info name="enable_debug_logging">&lt;%= @info['enable_debug_logging'] %&gt;</info>
+        </infos>
+        <parameters>
+            <parameter name="subscription_id">&lt;%= @parameters['subscription_id'] %&gt;</parameter>
+            <parameter name="vm_deployment">&lt;%= @parameters['vm_deployment'] %&gt;</parameter>
+            <parameter name="vm_name">&lt;%= @parameters['vm_name'] %&gt;</parameter>
+	    <parameter name="cloud_service_name">&lt;%= @parameters['cloud_service_name'] %&gt;</parameter>
+        </parameters>
+    </handler>
+    <results format="xml">
+        <result name="vm_info"/>
+    </results>
+</taskDefinition>

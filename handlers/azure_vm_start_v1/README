@@ -1,0 +1,19 @@
+== Azure_Vm_Start
+This handler start an existing Azure Virtual Machine.
+
+=== Parameters
+[Subscription ID]
+  The Azure Subscription ID.
+[VM Name]
+  The Name of the Virtual Machine to be started.
+
+=== Results
+[Output]
+  XML of the start execution
+
+==== Sample Configuration
+Subscription ID:			55c212bdee118e0662030003
+VM Name:               		kdtestmachine2
+
+=== Detailed Description
+This handler uses the Azure Rest API library to start a Virtual Machine associated to the security certificate tied to the handler.

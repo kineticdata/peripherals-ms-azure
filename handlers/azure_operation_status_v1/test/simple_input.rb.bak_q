@@ -1,0 +1,14 @@
+{
+  'info' =>
+  {
+    'site' => '',
+    'username' => '',
+    'password' => '',
+    'enable_debug_logging' => 'Yes'
+  },
+  'parameters' => {
+    'subscription_id' => '3415cb63-572d-4aa8-995b-d47aea7f8cdf',
+    'vm_name' => 'kinetictest',
+	'delete_related_storage' => 'false'
+  }
+}

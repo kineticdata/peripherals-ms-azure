@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_vm_create" name="Azure VM Create" schema_version="1.0" version="1">
+    <author>support@kineticdata.com</author>
+    <description>This handler creates a new issue in a Jira project.</description>
+    <helpurl>http://ktc.kineticdata.com/handler/azure_vm_create/1</helpurl>
+    <visible>true</visible>
+    <deferrable>false</deferrable>
+    <parameters>
+        <parameter id="subscription_id" label="Subscription ID" required="true"
+            tooltip="The Azure Subscription ID."/>
+        <parameter id="vm_name" label="VM Name" required="true"
+            tooltip="The Name of the Virtual Machine to be started."/>
+        <parameter id="vm_user" label="VM User" required="true"
+            tooltip="The new user assigned to the virtual machine being created."/>
+        <parameter id="password" label="Password" required="true"
+            tooltip="The password for the new users."/>
+        <parameter id="os_type" label="OS Type" required="true"
+            tooltip="Operating System being used to create the VM. Value must be Windows or Linux."/>
+        <parameter id="image" label="Image" required="true"
+            tooltip="Image being used to create the VM."/>
+        <parameter id="location" label="Location" required="true"
+            tooltip="Location of the VM (ex: USGov Iowa)."/>
+        <parameter id="cloud_service_name" label="Cloud Service Name" required="true"
+            tooltip="Name of the cloud service."/>
+        <parameter id="vm_size" label="VM Size" required="true"
+            tooltip="Size of the VM being created."/>
+        <parameter id="affinity_group_name" label="Affinity Group Name" required="false"
+            tooltip="Affinity group name."/>
+        <parameter id="virtual_network_name" label="Virtual Network Name" required="true"
+            tooltip="Virtual network name."/>
+        <parameter id="subnet_name" label="Subnet Name" required="true"
+            tooltip="Subnet name."/>
+        <parameter id="availability_set_name" label="Availability Set Name" required="false"
+            tooltip="Availability set name."/>
+        <parameter id="endpoints" label="Endpoints" required="false"
+            tooltip="Endpoints for the VM."/>
+    </parameters>
+    <handler name="azure_vm_create" version="1">
+        <infos>
+            <info name="server">&lt;%= @info['server'] %&gt;</info>
+        </infos>
+        <parameters>
+            <parameter name="subscription_id">&lt;%= @parameters['subscription_id'] %&gt;</parameter>
+            <parameter name="vm_name">&lt;%= @parameters['vm_name'] %&gt;</parameter>
+            <parameter name="vm_user">&lt;%= @parameters['vm_user'] %&gt;</parameter>
+            <parameter name="password">&lt;%= @parameters['password'] %&gt;</parameter>
+            <parameter name="os_type">&lt;%= @parameters['os_type'] %&gt;</parameter>
+            <parameter name="image">&lt;%= @parameters['image'] %&gt;</parameter>
+            <parameter name="location">&lt;%= @parameters['location'] %&gt;</parameter>
+            <parameter name="cloud_service_name">&lt;%= @parameters['cloud_service_name'] %&gt;</parameter>
+            <parameter name="vm_size">&lt;%= @parameters['vm_size'] %&gt;</parameter>
+            <parameter name="affinity_group_name">&lt;%= @parameters['affinity_group_name'] %&gt;</parameter>
+            <parameter name="virtual_network_name">&lt;%= @parameters['virtual_network_name'] %&gt;</parameter>
+            <parameter name="subnet_name">&lt;%= @parameters['subnet_name'] %&gt;</parameter>
+            <parameter name="availability_set_name">&lt;%= @parameters['availability_set_name'] %&gt;</parameter>
+            <parameter name="endpoints">&lt;%= @parameters['endpoints'] %&gt;</parameter>
+        </parameters>
+    </handler>
+    <results>
+        <result name="request_id"/>
+    </results>
+</taskDefinition>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_operation_status" name="Azure Operation Status" schema_version="1.0" version="1">
+    <author>support@kineticdata.com</author>
+    <description>This handler checks to see the status of an operation given the request id.</description>
+    <helpurl></helpurl>
+    <visible>true</visible>
+    <deferrable>false</deferrable>
+    <parameters>
+        <parameter id="subscription_id" label="Subscription ID" required="true"
+            tooltip="The Azure Subscription ID."/>
+        <parameter id="request_id" label="Request ID" required="true"
+            tooltip="The Request ID of an operation."/>
+    </parameters>
+    <handler name="azure_operation_status" version="1">
+        <infos>
+            <info name="server">&lt;%= @info['server'] %&gt;</info>
+        </infos>
+        <parameters>
+            <parameter name="subscription_id">&lt;%= @parameters['subscription_id'] %&gt;</parameter>
+            <parameter name="request_id">&lt;%= @parameters['request_id'] %&gt;</parameter>
+        </parameters>
+    </handler>
+    <results format="xml">
+        <result name="status"/>
+    </results>
+</taskDefinition>

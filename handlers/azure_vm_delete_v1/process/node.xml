@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_vm_delete" name="Azure VM Delete" schema_version="1.0" version="1">
+    <author>support@kineticdata.com</author>
+    <description>This handler deletes down an Azure VM.</description>
+    <helpurl></helpurl>
+    <visible>true</visible>
+    <deferrable>false</deferrable>
+    <parameters>
+        <parameter id="subscription_id" label="Subscription ID" required="true"
+            tooltip="The Azure Subscription ID."/>
+        <parameter id="vm_deployment" label="VM Deployment" required="true"
+            tooltip="The Name of the Virtual Machine Deployment."/>
+        <parameter id="vm_name" label="VM Name" required="true"
+            tooltip="The Name of the Virtual Machine."/>
+        <parameter id="cloud_service_name" label="Cloud Service Name" required="true"
+            tooltip="The Name of the Virtual Machine."/>
+        <parameter id="delete_disk" label="Delete Disk" required="true"
+            tooltip="Delete the specified data or operating system disk from the image repository. Value has to either be Yes or No"/>
+    </parameters>
+    <handler name="azure_vm_delete" version="1">
+        <infos>
+            <info name="server">&lt;%= @info['server'] %&gt;</info>
+            <info name="enable_debug_logging">&lt;%= @info['enable_debug_logging'] %&gt;</info>
+        </infos>
+        <parameters>
+            <parameter name="subscription_id">&lt;%= @parameters['subscription_id'] %&gt;</parameter>
+            <parameter name="vm_deployment">&lt;%= @parameters['vm_deployment'] %&gt;</parameter>
+            <parameter name="vm_name">&lt;%= @parameters['vm_name'] %&gt;</parameter>
+	        <parameter name="cloud_service_name">&lt;%= @parameters['cloud_service_name'] %&gt;</parameter>
+            <parameter name="delete_disk">&lt;%= @parameters['delete_disk'] %&gt;</parameter>
+        </parameters>
+    </handler>
+    <results format="xml">
+        <result name="request_id"/>
+    </results>
+</taskDefinition>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_vm_restart" name="Azure VM Restart" schema_version="1.0" version="1">
+    <author>support@kineticdata.com</author>
+    <description>This handler creates a new issue in a Jira project.</description>
+    <helpurl>http://ktc.kineticdata.com/handler/azure_vm_list_machines/1</helpurl>
+    <visible>true</visible>
+    <deferrable>false</deferrable>
+    <parameters>
+        <parameter id="subscription_id" label="Subscription ID" required="true"
+            tooltip="The Azure Subscription ID"/>
+        <parameter id="vm_name" label="VM Name" required="true"
+            tooltip="The Name of the Virtual Machine to restart"/>
+    </parameters>
+    <handler name="azure_vm_restart" version="1">
+        <infos>
+            <info name="site">&lt;%= @info['site'] %&gt;</info>
+            <info name="username">&lt;%= @info['username'] %&gt;</info>
+            <info name="password">&lt;%= @info['password'] %&gt;</info>
+            <info name="enable_debug_logging">&lt;%= @info['enable_debug_logging'] %&gt;</info>
+        </infos>
+        <parameters>
+            <parameter name="subscription_id">&lt;%= @parameters['subscription_id'] %&gt;</parameter>
+            <parameter name="vm_name">&lt;%= @parameters['vm_name'] %&gt;</parameter>
+        </parameters>
+    </handler>
+    <results format="xml"/>
+</taskDefinition>
