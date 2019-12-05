@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_cosmos_document_crud" name="Azure Cosmos Document CRUD" schema_version="1.0" version="1">
+    <author>support@kineticdata.com</author>
+    <description>
+        Creates a form record in Kinetic Request CE for the specified space. If the form exists, nothing happens
+    </description>
+    <helpurl></helpurl>
+    <visible>false</visible>
+    <deferrable>false</deferrable>
+    <parameters>
+        <parameter id="error_handling" label="Error Handling" required="true"
+          tooltip="Determine what to return if an error is encountered."
+          menu="Error Message,Raise Error">Error Message</parameter>
+        <parameter id="method" label="Method" required="true" tooltip="Rest method (GET, POST, PUT, DELETE)"/>
+        <parameter id="database_name" label="Database Name" required="true"
+          tooltip="The Database name the document is in."/>
+        <parameter id="collection_name" label="Collection Name" required="true"
+          tooltip="The Collection name the document is in."/>
+        <parameter id="document_name" label="Document Name" required="false"
+          tooltip="The Document name/id attempting to create/update."/>
+        <parameter id="partition_key" label="Partition Key" required="false" tooltip=
+          "The Partition key assocated with the document. Used with PUT and POST methods. Separate multiple partition keys with comma."/>
+        <parameter id="body" label="Body" required="false"
+          tooltip="This will be the body of the Rest request sent to Cosmos DB. Format JSON."/>
+    </parameters>
+    <handler name="azure_cosmos_document_crud" version="1">
+        <infos>
+            <info name="enable_debug_logging">&lt;%= @info['enable_debug_logging'] %&gt;</info>
+            <info name="origin">&lt;%= @info['origin'] %&gt;</info>
+            <info name="master_key">&lt;%= @info['master_key'] %&gt;</info>
+        </infos>
+        <parameters>
+            <parameter name="error_handling">&lt;%= @parameters.has_key?("error_handling") ?
+                @parameters["error_handling"] : "Raise Error" %&gt;</parameter>
+            <parameter name="method">&lt;%= @parameters['method'] %&gt;</parameter>
+            <parameter name="database_name">&lt;%= @parameters['database_name'] %&gt;</parameter>
+            <parameter name="collection_name">&lt;%= @parameters['collection_name'] %&gt;</parameter>
+            <parameter name="document_name">&lt;%= @parameters['document_name'] %&gt;</parameter>
+            <parameter name="partition_key">&lt;%= @parameters['partition_key'] %&gt;</parameter>
+            <parameter name="body">&lt;%= @parameters['body'] %&gt;</parameter>
+        </parameters>
+    </handler>
+    <results format="xml">
+        <result name="Handler Error Message"/>
+        <result name="output"/>
+    </results>
+</taskDefinition>
