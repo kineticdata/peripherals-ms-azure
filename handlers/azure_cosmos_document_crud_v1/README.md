@@ -31,7 +31,7 @@ Notes:
   * Create, delete and update operations require a Partition Key value.
 
 ### Example inputs
-Retrieve multiple items from the FamilyDatabase db and FamilyContainer collection.
+Retrieve multiple items from the FamilyDatabase db and FamilyContainer collection.  
 `
   'parameters' => {
     'error_handling' => 'Error Message',
@@ -42,9 +42,8 @@ Retrieve multiple items from the FamilyDatabase db and FamilyContainer collectio
     'partition_key' => '',
     'body' => '',
   }
-`
-Retrieve multiple items from the FamilyDatabase db and FamilyContainer collection base on query.
-visit [Getting started with SQL queries](https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started) in the cosmos docs for more info. 
+`   
+Retrieve multiple items from the FamilyDatabase db and FamilyContainer collection base on query. Visit [Getting started with SQL queries](https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started) in the cosmos docs for more info.   
 `
   'parameters' => {
     'error_handling' => 'Error Message',
@@ -55,9 +54,8 @@ visit [Getting started with SQL queries](https://docs.microsoft.com/en-us/azure/
     'partition_key' => '',
     'body' => '{ "query" : "Select * From root"}',
   }
-`
-Create a new item in the FamilyDatabase db and FamilyContainer collection.  
-The collection was set up with Country as the Partition Key.
+`  
+Create a new item in the FamilyDatabase db and FamilyContainer collection. The collection was set up with Country as the Partition Key.  
 `
   'parameters' => {
     'error_handling' => 'Error Message',
@@ -81,9 +79,8 @@ The collection was set up with Country as the Partition Key.
       ]
     } ',
   }
-`
-Update an item in the FamilyDatabase db and FamilyContainer collection. Updates overwrite the existing object.  
-The items id needs to be provided as the document name. The collection was set up with Country as the Partition Key.
+`  
+Update an item in the FamilyDatabase db and FamilyContainer collection. Updates overwrite the existing object. The items id needs to be provided as the document name. The collection was set up with Country as the Partition Key.  
 `
   'parameters' => {
     'error_handling' => 'Error Message',
@@ -107,9 +104,8 @@ The items id needs to be provided as the document name. The collection was set u
       ]
     } ',
   }
-`
-Delete an item in the FamilyDatabase db and FamilyContainer collection.  
-The items id needs to be provided as the document name. The collection was set up with Country as the Partition Key.
+`  
+Delete an item in the FamilyDatabase db and FamilyContainer collection. The items id needs to be provided as the document name. The collection was set up with Country as the Partition Key.  
 `
   'parameters' => {
     'error_handling' => 'Error Message',
@@ -120,4 +116,4 @@ The items id needs to be provided as the document name. The collection was set u
     'partition_key' => 'USA',
     'body' => '',
   }
-`
+`  
