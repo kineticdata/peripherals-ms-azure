@@ -4,6 +4,7 @@ This Rest based bridge adapter was designed to work with Azure AD services v1 re
 ___
 ## Adapter Configurations
 Name | Description
+------------ | -------------
 Client Id | The application id assigned by Azure
 Client Secret | The secret generated for the app
 Tenant Id| The directory tenant the application plans to operate against
