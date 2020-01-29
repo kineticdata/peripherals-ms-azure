@@ -161,8 +161,8 @@ public class AzureRestAdapter implements BridgeAdapter {
 
         Map<String, String> parameters = parser.getParameters(request.getQuery());
         
-                // Path builder functions may mutate the parameters Map;
-        String path = mapping.getPathbuilder().apply(null, parameters);
+        // Path builder functions may mutate the parameters Map;
+        String path = mapping.getPathbuilder().apply(structureArray, parameters);
         
         Map<String, NameValuePair> parameterMap = buildNameValuePairMap(parameters);
         
@@ -211,7 +211,7 @@ public class AzureRestAdapter implements BridgeAdapter {
         }
         
         // Path builder functions may mutate the parameters Map;
-        String path = mapping.getPathbuilder().apply(null, parameters);
+        String path = mapping.getPathbuilder().apply(structureArray, parameters);
         
         Map<String, NameValuePair> parameterMap = buildNameValuePairMap(parameters);
         
@@ -284,7 +284,7 @@ public class AzureRestAdapter implements BridgeAdapter {
         metadata.clear();
 
         // Path builder functions may mutate the parameters Map;
-        String path = mapping.getPathbuilder().apply(null, parameters);
+        String path = mapping.getPathbuilder().apply(structureArray, parameters);
         
         // If a limit was not provided get the top 999.
         if (!parameters.containsKey("$top")) {
