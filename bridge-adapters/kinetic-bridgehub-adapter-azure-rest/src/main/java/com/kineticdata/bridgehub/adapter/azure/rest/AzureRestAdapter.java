@@ -219,17 +219,23 @@ public class AzureRestAdapter implements BridgeAdapter {
         JSONObject object = azureApiHelper.executeRequest(getUrl(path, 
             parameterMap));
 
-        // Get domain specific data. A single reture will come as an object.  If
-        // values exists it mean that multiple entities were returned.
+        // Get domain specific data. A single reture will come as an object.
+        // Multiple results come back in the "value" array.
         JSONArray obj = (JSONArray)(object).get("value");
         Record record = new Record();
-        if (obj == null) {
+        if (obj == null || obj.size() == 1) {
+            if (obj != null) {
+                // Reassign object to single result 
+                object = (JSONObject)obj.get(0);
+            }
             // Set object to user defined fields
             Set<Object> removeKeySet = buildKeySet(fields, object);
             object.keySet().removeAll(removeKeySet);
 
             // Create a Record object from the responce JSONObject
             record = new Record(object);
+        } else if (obj.size() == 0) {
+            LOGGER.debug("No results found for query: {}", request.getQuery());
         } else {
             throw new BridgeError ("Retrieve must return a single result."
                 + " Multiple results found.");
@@ -262,6 +268,8 @@ public class AzureRestAdapter implements BridgeAdapter {
         if (fields == null) {
             fields = new ArrayList();
         } else {
+            LOGGER.trace("Adding feilds \"{}\" to request parameters as $select",
+                String.join(",",fields));
             // Only get a list of the requested fields from the Azure API.
             parameters.put("$select", String.join(",",fields));
         }
@@ -269,8 +277,6 @@ public class AzureRestAdapter implements BridgeAdapter {
         // If form defines sort order use it. This will overwrite $orderby in the
         // qualification mapping.
         if (metadata.get("order") != null) {
-            LOGGER.trace("Adding $orderby parameter because form has order "
-                + "feilds defined");
             parameters.put("$orderby", addSort(metadata.get("order")));
         }
 
@@ -395,6 +401,9 @@ public class AzureRestAdapter implements BridgeAdapter {
         String sortOrderString = sortOrderItems.entrySet().stream().map(entry -> {
             return entry.getKey() + " " + entry.getValue().toLowerCase();
         }).collect(Collectors.joining(","));
+                    
+        LOGGER.trace("Adding $orderby parameter because form has order "
+            + "feilds \"{}\" defined", sortOrderString);
         return sortOrderString;
     }
     
