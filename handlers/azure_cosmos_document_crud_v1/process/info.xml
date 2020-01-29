@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskInfo version="1.0">
+  <info name="enable_debug_logging" description="Enable debug logging if the value is set to 'Yes'.">No</info>
+  <info name="origin" description="The origin of Cosmos account.  ex https://{databaseaccount}.documents.azure.com."></info>
+  <info name="master_key" description="The master key that was generated when the account was created or a regenerated key."></info>  
+</taskInfo>
