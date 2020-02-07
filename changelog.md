@@ -1,3 +1,7 @@
 Azure \[bridge-adapters\] (2020-01-28)
-  \[kinetic-bridgehub-adapter-azure-rest\] (2020-01-28)
+  \[kinetic-bridgehub-adapter-azure-rest\] v1.0.0
     * Initial create
+
+Azure \[bridge-adapters\] (2020-02-07)
+  \[kinetic-bridgehub-adapter-azure-rest\] v1.0.2
+    * Error handling was preventing token refresh.

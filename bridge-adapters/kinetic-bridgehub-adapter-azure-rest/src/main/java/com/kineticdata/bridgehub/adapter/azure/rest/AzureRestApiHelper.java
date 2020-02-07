@@ -74,13 +74,7 @@ public class AzureRestApiHelper {
             // Confirm that response is a JSON object
             output = parseResponse(EntityUtils.toString(entity));
             
-            if (response.getStatusLine().getStatusCode() == 404) {
-                throw new BridgeError("404: Page not found");
-            } else if (response.getStatusLine().getStatusCode() == 400) {
-                throw new BridgeError("400: Bad Reqeust");
-            } else if (response.getStatusLine().getStatusCode() == 500) {
-                throw new BridgeError("500 Internal Server Error");
-            } else if(responseCode == 401){
+            if(responseCode == 401){
                 // If token has expired get fresh token
                 getToken();
                 // If count is greater than 2 assume stop token retry attempts.
@@ -90,6 +84,10 @@ public class AzureRestApiHelper {
                     throw new BridgeError(count + " attempts were made to get a"
                         + "new token without success.");
                 }
+            }
+            // Handle all other faild repsonses
+            if (responseCode >= 400) {
+                handleFailedReqeust(responseCode);
             }
         }
         catch (IOException e) {
@@ -128,7 +126,12 @@ public class AzureRestApiHelper {
             response = client.execute(httpPost);
             HttpEntity entity = response.getEntity();
             JSONObject jsonResponse = parseResponse(EntityUtils.toString(entity));
-
+            
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode >= 400) {
+                handleFailedReqeust(responseCode);
+            }
+            
             token = jsonResponse.get("access_token").toString();
             LOGGER.debug("Successfully retreived token. It will expire in " +
                 jsonResponse.get("expires_in") + " seconds");
@@ -139,6 +142,20 @@ public class AzureRestApiHelper {
         }
     }
     
+    private void handleFailedReqeust (int responseCode) throws BridgeError {
+        switch (responseCode) {
+            case 404:
+                throw new BridgeError("404: Page not found");
+            case 400:
+                throw new BridgeError("400: Bad Reqeust");
+            case 405:
+                throw new BridgeError("405: Method Not Allowed");
+            case 500:
+                throw new BridgeError("500 Internal Server Error");
+            default:
+                throw new BridgeError("Unexpected response from server");
+        }
+    }
         
     private JSONObject parseResponse(String output) throws BridgeError{
                 
