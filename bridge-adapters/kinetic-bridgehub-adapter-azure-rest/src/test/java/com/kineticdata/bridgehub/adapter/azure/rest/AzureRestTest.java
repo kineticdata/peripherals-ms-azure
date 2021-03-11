@@ -73,7 +73,7 @@ public class AzureRestTest extends BridgeAdapterTestBase{
         } catch (BridgeError e) {
             error = e;
         }
-        
+
         assertNull(error);
         assertTrue(count.getValue() > 0);
     }

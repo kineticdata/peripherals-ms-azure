@@ -59,6 +59,7 @@ public class AzureRestApiHelper {
         ) {
             HttpResponse response;
             HttpGet get = new HttpGet(url);
+
             get.setHeader("Authorization", "Bearer " + token);
             
             response = client.execute(get);
@@ -75,9 +76,10 @@ public class AzureRestApiHelper {
             output = parseResponse(EntityUtils.toString(entity));
             
             if(responseCode == 401){
+                LOGGER.debug("401 recieved attempting to get new token.");
                 // If token has expired get fresh token
                 getToken();
-                // If count is greater than 2 assume stop token retry attempts.
+                // If count is greater than 2 stop token retry attempts.
                 if (count < 2) {
                     output = executeRequest(url, count + 1);
                 } else {
@@ -86,9 +88,9 @@ public class AzureRestApiHelper {
                 }
             }
             // Handle all other faild repsonses
-            if (responseCode >= 400) {
+            if (responseCode >= 400 && responseCode != 401) {
                 handleFailedReqeust(responseCode);
-            }
+            } 
         }
         catch (IOException e) {
             throw new BridgeError(
@@ -144,10 +146,12 @@ public class AzureRestApiHelper {
     
     private void handleFailedReqeust (int responseCode) throws BridgeError {
         switch (responseCode) {
-            case 404:
-                throw new BridgeError("404: Page not found");
             case 400:
                 throw new BridgeError("400: Bad Reqeust");
+            case 401:
+                throw new BridgeError("401: Unauthorized");
+            case 404:
+                throw new BridgeError("404: Page not found");
             case 405:
                 throw new BridgeError("405: Method Not Allowed");
             case 500:
@@ -171,9 +175,16 @@ public class AzureRestApiHelper {
             throw new BridgeError("An unexpected error has occured " + e);
         }
         
-        if(jsonResponse.get("error") != null) {
-            JSONObject error = (JSONObject)jsonResponse.get("error");
-            throw new BridgeError("Received error: " 
+        // Log the error if it is Authentication because we will get a new
+        // auth token
+        JSONObject error = (JSONObject)jsonResponse.get("error");
+        if(error != null 
+            && error.get("code").toString().equals("InvalidAuthenticationToken")) {
+            
+            LOGGER.error("Received error: "  + error.get("code").toString() 
+                + ", Description: " + error.get("message").toString());
+        } else if (error != null) {
+            throw new BridgeError ("Received error: " 
                 + error.get("code").toString() + ", Description: "
                 + error.get("message").toString());
         }
