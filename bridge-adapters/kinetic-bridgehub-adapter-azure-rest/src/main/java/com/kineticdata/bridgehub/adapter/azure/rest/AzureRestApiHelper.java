@@ -143,33 +143,13 @@ public class AzureRestApiHelper {
     }
         
     private JSONObject parseResponse(String output) throws BridgeError{
-                
-        JSONObject jsonResponse = new JSONObject();
         try {
             // Parse the response string into a JSONObject
-            jsonResponse = (JSONObject)JSONValue.parse(output);
-        } catch (ClassCastException e){
-            JSONArray error = (JSONArray)JSONValue.parse(output);
-            throw new BridgeError("Error caught in retrieve: "
-                + ((JSONObject)error.get(0)).get("messageText"));
+            return (JSONObject)JSONValue.parse(output);
+        } catch (ClassCastException e) {
+            throw new BridgeError("Failed to parse the response as JSON", e);
         } catch (Exception e) {
-            throw new BridgeError("An unexpected error has occured " + e);
+            throw new BridgeError("An unexpected error has occurred trying to parse the response", e);
         }
-        
-        // Log the error if it is Authentication because we will get a new
-        // auth token
-        JSONObject error = (JSONObject)jsonResponse.get("error");
-        if(error != null 
-            && error.get("code").toString().equals("InvalidAuthenticationToken")) {
-            
-            LOGGER.error("Received error: "  + error.get("code").toString() 
-                + ", Description: " + error.get("message").toString());
-        } else if (error != null) {
-            throw new BridgeError ("Received error: " 
-                + error.get("code").toString() + ", Description: "
-                + error.get("message").toString());
-        }
-        
-        return jsonResponse;
     }
 }
