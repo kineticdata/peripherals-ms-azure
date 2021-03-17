@@ -32,22 +32,21 @@ public class AzureRestApiHelper {
     private final String clientSecret;
     private final String tenantId;
     private final String scope;
-    private String token;
     
     public AzureRestApiHelper(String tenantId, String clientId,
         String clientSecret, String scope) {
         
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-    this.tenantId = tenantId;
-    this.scope = scope;
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
+        this.tenantId = tenantId;
+        this.scope = scope;
     } 
     
     public JSONObject executeRequest (String url) throws BridgeError{
         return executeRequest (url, 0);
     }
     
-    public JSONObject executeRequest (String url, int count) 
+    private JSONObject executeRequest (String url, int count) 
         throws BridgeError{
         
         JSONObject output;      
@@ -60,7 +59,7 @@ public class AzureRestApiHelper {
             HttpResponse response;
             HttpGet get = new HttpGet(url);
 
-            get.setHeader("Authorization", "Bearer " + token);
+            get.setHeader("Authorization", "Bearer " + getToken());
             
             response = client.execute(get);
             LOGGER.debug("Recieved response from \"{}\" in {}ms.",
@@ -75,22 +74,12 @@ public class AzureRestApiHelper {
             // Confirm that response is a JSON object
             output = parseResponse(EntityUtils.toString(entity));
             
-            if(responseCode == 401){
-                LOGGER.debug("401 recieved attempting to get new token.");
-                // If token has expired get fresh token
-                getToken();
-                // If count is greater than 2 stop token retry attempts.
-                if (count < 2) {
-                    output = executeRequest(url, count + 1);
-                } else {
-                    throw new BridgeError(count + " attempts were made to get a"
-                        + "new token without success.");
-                }
+            if (responseCode == 401 && count < 2) {
+                LOGGER.debug("Invalid token. Retrying the request with a fresh token.");
+                output = executeRequest(url, count++);
+            } else if (responseCode != 200) {
+                handleFailedRequest(response);
             }
-            // Handle all other faild repsonses
-            if (responseCode >= 400 && responseCode != 401) {
-                handleFailedReqeust(responseCode);
-            } 
         }
         catch (IOException e) {
             throw new BridgeError(
@@ -101,7 +90,8 @@ public class AzureRestApiHelper {
     }
     
     // Get a JWT to be used with subsequent requests.
-    public void getToken () throws BridgeError {
+    public String getToken () throws BridgeError {
+        String token = "";
         String url = "https://login.microsoftonline.com/" + tenantId
             + "/oauth2/v2.0/token"; 
         
@@ -131,7 +121,7 @@ public class AzureRestApiHelper {
             
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode >= 400) {
-                handleFailedReqeust(responseCode);
+                handleFailedRequest(response);
             }
             
             token = jsonResponse.get("access_token").toString();
@@ -142,23 +132,14 @@ public class AzureRestApiHelper {
             throw new BridgeError("Unable to make a connection to the REST"
                 + " Service", e);
         }
+        
+        return token;
     }
     
-    private void handleFailedReqeust (int responseCode) throws BridgeError {
-        switch (responseCode) {
-            case 400:
-                throw new BridgeError("400: Bad Reqeust");
-            case 401:
-                throw new BridgeError("401: Unauthorized");
-            case 404:
-                throw new BridgeError("404: Page not found");
-            case 405:
-                throw new BridgeError("405: Method Not Allowed");
-            case 500:
-                throw new BridgeError("500 Internal Server Error");
-            default:
-                throw new BridgeError("Unexpected response from server");
-        }
+    private void handleFailedRequest(HttpResponse response) throws BridgeError {
+        int statusCode = response.getStatusLine().getStatusCode();
+        String reasonPhrase = response.getStatusLine().getReasonPhrase();
+        throw new BridgeError(statusCode + ": " + reasonPhrase);
     }
         
     private JSONObject parseResponse(String output) throws BridgeError{

@@ -93,7 +93,7 @@ public class AzureRestTest extends BridgeAdapterTestBase{
         request.setQuery("userId=<%=parameter[\"User Name\"]%>");
         
         request.setParameters(new HashMap<String, String>() {{ 
-            put("User Name", "XRXIRCAS@cox.com");
+            put("User Name", "-foo.bar");
         }});
         
         
