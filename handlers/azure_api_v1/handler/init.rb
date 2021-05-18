@@ -73,7 +73,7 @@ class AzureApiV1
           :Authorization => token
       }.merge(@headers)
 
-      response_code = e.response.code
+      response_code = response.code
 
     rescue RestClient::Exception => e
       error = nil
