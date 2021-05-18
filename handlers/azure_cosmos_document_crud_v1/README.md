@@ -32,7 +32,7 @@ Notes:
 
 ### Example inputs
 Retrieve multiple items from the FamilyDatabase db and FamilyContainer collection.  
-`
+```ruby
   'parameters' => {
     'error_handling' => 'Error Message',
     'method' => 'GET',
@@ -42,9 +42,9 @@ Retrieve multiple items from the FamilyDatabase db and FamilyContainer collectio
     'partition_key' => '',
     'body' => '',
   }
-`   
+```   
 Retrieve multiple items from the FamilyDatabase db and FamilyContainer collection base on query. Visit [Getting started with SQL queries](https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started) in the cosmos docs for more info.   
-`
+```ruby
   'parameters' => {
     'error_handling' => 'Error Message',
     'method' => 'POST',
@@ -54,9 +54,9 @@ Retrieve multiple items from the FamilyDatabase db and FamilyContainer collectio
     'partition_key' => '',
     'body' => '{ "query" : "Select * From root"}',
   }
-`  
+```  
 Create a new item in the FamilyDatabase db and FamilyContainer collection. The collection was set up with Country as the Partition Key.  
-`
+```ruby
   'parameters' => {
     'error_handling' => 'Error Message',
     'method' => 'POST',
@@ -79,9 +79,9 @@ Create a new item in the FamilyDatabase db and FamilyContainer collection. The c
       ]
     } ',
   }
-`  
+```  
 Update an item in the FamilyDatabase db and FamilyContainer collection. Updates overwrite the existing object. The items id needs to be provided as the document name. The collection was set up with Country as the Partition Key.  
-`
+```ruby
   'parameters' => {
     'error_handling' => 'Error Message',
     'method' => 'PUT',
@@ -104,9 +104,9 @@ Update an item in the FamilyDatabase db and FamilyContainer collection. Updates 
       ]
     } ',
   }
-`  
+```  
 Delete an item in the FamilyDatabase db and FamilyContainer collection. The items id needs to be provided as the document name. The collection was set up with Country as the Partition Key.  
-`
+```ruby
   'parameters' => {
     'error_handling' => 'Error Message',
     'method' => 'DELETE',
@@ -116,4 +116,4 @@ Delete an item in the FamilyDatabase db and FamilyContainer collection. The item
     'partition_key' => 'USA',
     'body' => '',
   }
-`  
+```  
