@@ -16,6 +16,7 @@ ___
 ## Example Qualification Mapping
 * userId=foo@bar.com
 * $filter=<object property name>="pizza"
+* $search="displayName:foo"
 ___
 ## Notes
 * To do a retrieve of a user the userId parameter must be passed in the qualification mapping.
@@ -23,3 +24,5 @@ ___
 * Only sorting supported by the Azure AD source system is allowed. i.e. no adapter side sorting.
 * Fields are automatically added to the Azure request as $select=...
     * Fields return are case sensitive.  If the return object has case then the field definition must match.
+* As per [Azure documentation](https://docs.microsoft.com/en-us/graph/aad-advanced-queries) if $search or $count is included as a search parameter the adapter will add **ConsistencyLevel: eventual** to the request headers.
+    * <path>/$count is not supported by the adapter

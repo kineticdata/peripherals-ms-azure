@@ -135,6 +135,37 @@ public class AzureRestTest extends BridgeAdapterTestBase{
     }
     
     @Test
+    public void test_search_query() throws Exception{
+        BridgeError error = null;
+        
+        // Create the Bridge Request
+        List<String> fields = new ArrayList<>();
+        fields.add("displayName");
+        fields.add("surname");
+        fields.add("userPrincipalName");
+        
+        BridgeRequest request = new BridgeRequest();
+        request.setStructure("Users");
+        request.setFields(fields);
+        request.setQuery("$search=\"displayName:<%=parameter[\"Display Name\"]%>\"");
+        
+        request.setParameters(new HashMap<String, String>() {{ 
+            put("Display Name", "Kim Abner");
+        }});
+        
+        
+        RecordList records = null;
+        try {
+            records = getAdapter().search(request);
+        } catch (BridgeError e) {
+            error = e;
+        }
+        
+        assertNull(error);
+        assertTrue(records.getRecords().size() > 0);
+    }
+    
+    @Test
     public void test_search_sort() throws Exception{
         BridgeError error = null;
         

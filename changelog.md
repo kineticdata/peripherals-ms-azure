@@ -13,3 +13,7 @@ Azure \[handlers\] (2021-05-18)
     * Initial commit.
   \[azure_cosmos_document_crud] v1
     * Updated readme.
+
+Azure \[bridge-adapters\] (2020-02-07)
+  \[kinetic-bridgehub-adapter-azure-rest\] v1.0.4
+    * Added support for $search and $count advanced query
