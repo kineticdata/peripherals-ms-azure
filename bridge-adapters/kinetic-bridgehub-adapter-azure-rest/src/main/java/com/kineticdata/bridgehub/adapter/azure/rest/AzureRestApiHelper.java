@@ -2,6 +2,7 @@ package com.kineticdata.bridgehub.adapter.azure.rest;
 
 import com.kineticdata.bridgehub.adapter.BridgeError;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.http.Consts;
@@ -11,6 +12,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
@@ -61,6 +63,10 @@ public class AzureRestApiHelper {
 
             get.setHeader("Authorization", "Bearer " + getToken());
             
+            if (isAdvancedQuery(get)) {
+                get.setHeader("ConsistencyLevel", "eventual");
+            }
+            
             response = client.execute(get);
             LOGGER.debug("Recieved response from \"{}\" in {}ms.",
                 url,
@@ -78,7 +84,7 @@ public class AzureRestApiHelper {
                 LOGGER.debug("Invalid token. Retrying the request with a fresh token.");
                 output = executeRequest(url, count++);
             } else if (responseCode != 200) {
-                handleFailedRequest(response);
+                handleFailedRequest(response, output);
             }
         }
         catch (IOException e) {
@@ -136,9 +142,42 @@ public class AzureRestApiHelper {
         return token;
     }
     
+    protected boolean isAdvancedQuery(HttpGet get) {
+        URIBuilder newBuilder = new URIBuilder(get.getURI());
+        List<NameValuePair> params = newBuilder.getQueryParams();
+        
+        return params.stream().anyMatch(pair -> "$count".equals(pair.getName()) || 
+            "$search".equals(pair.getName())) || newBuilder.getPath().contains("$count");
+    }
+    
     private void handleFailedRequest(HttpResponse response) throws BridgeError {
         int statusCode = response.getStatusLine().getStatusCode();
         String reasonPhrase = response.getStatusLine().getReasonPhrase();
+        throw new BridgeError(statusCode + ": " + reasonPhrase);
+    }
+    
+    /**
+     * If the request has a json response but not 200 code the response likely has
+     * an error message.
+     * 
+     * @param response
+     * @param output
+     * @throws BridgeError 
+     */
+    private void handleFailedRequest(HttpResponse response, JSONObject output) 
+        throws BridgeError {
+        
+        int statusCode = response.getStatusLine().getStatusCode();
+        String reasonPhrase = response.getStatusLine().getReasonPhrase();
+        
+        // If the response has a better error message then use it.
+        if(output.containsKey("error")) {
+            JSONObject error = (JSONObject)output.get("error");
+            if(error.containsKey("message")) {
+                reasonPhrase = (String)error.get("message");
+            }
+        }
+        
         throw new BridgeError(statusCode + ": " + reasonPhrase);
     }
         
