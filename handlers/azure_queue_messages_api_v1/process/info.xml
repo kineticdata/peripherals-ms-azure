@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<taskInfo version="1.0">
+  <info name="tenent_id" description="Azure Tenet Id"></info>
+  <info name="client_id" description="Application Client Id" ></info>
+  <info name="client_secret" description="Application Client Secret" type="encrypted"></info>
+  <info name="enable_debug_logging" description="True or False">false</info>
+</taskInfo>
