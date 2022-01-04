@@ -31,11 +31,10 @@ class AzureQueueMessagesApiV1
     @body = @parameters["body"]
     @method = (@parameters["method"] || :get).downcase.to_sym
     @storage_account = @parameters["storage_account"]
-    puts @parameters
+
     @path = @parameters["path"]
     @path = "/#{@path}" if !@path.start_with?("/")
 
-    @accept = 'text/xml'
     @content_type = 'text/xml'
   end
 
@@ -63,7 +62,7 @@ class AzureQueueMessagesApiV1
           "grant_type" => "client_credentials",
           "scope" => "https://#{@storage_account}.queue.core.windows.net/.default"
         }, \
-        headers: {:content_type => 'application/x-www-form-urlencoded', :accept => @accept}
+        headers: {:content_type => 'application/x-www-form-urlencoded'}
        
       # Parse token from request
       puts "Access token retrieved." if @debug_logging_enabled
@@ -85,8 +84,7 @@ class AzureQueueMessagesApiV1
         url: asset_url, \
         payload: encoded_body, \
         headers: {
-          :content_type => @content_type, 
-          :accept => @accept,
+          :content_type => @content_type,
           :Authorization => "Bearer #{token}",
           'x-ms-date' => Time.now.utc.strftime("%a, %d %b %Y %H:%M:%S GMT"),
           'x-ms-version' => "2017-11-09"
