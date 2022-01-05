@@ -8,7 +8,7 @@
   'parameters' => {
     'error_handling' => 'Error Message',
     'headers' => '',
-    'method' => '',
+    'method' => 'GET',
     'storage_account' => '',
     'path' => '',
     'body' => ''

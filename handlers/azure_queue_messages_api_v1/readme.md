@@ -25,6 +25,7 @@ Get four messages for the <foo> queue
     'error_handling' => 'Error Message',
     'headers' => '',
     'method' => 'GET',
+    'storage_account' => '<account name>',
     'path' => '/<foo>/messages?numofmessages=4',
     'body' => ''
   }
@@ -35,6 +36,7 @@ Delete a message for the <foo> queue
     'error_handling' => 'Error Message',
     'headers' => '',
     'method' => 'DELETE',
+    'storage_account' => '<account name>',
     'path' => '/<foo>/messages/<message id>?popreceipt=<pop receipt id>',
     'body' => ''
   }
@@ -45,6 +47,7 @@ Update an existing message for the <foo> queue
     'error_handling' => 'Error Message',
     'headers' => '',
     'method' => 'PUT',
+    'storage_account' => '<account name>',
     'path' => '/<foo>/messages/<message id>?popreceipt=<pop receipt id>',
     'body' => 'Update to message'
   }
