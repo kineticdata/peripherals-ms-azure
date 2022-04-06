@@ -17,3 +17,7 @@ Azure \[handlers\] (2021-05-18)
 Azure \[bridge-adapters\] (2020-02-07)
   \[kinetic-bridgehub-adapter-azure-rest\] v1.0.4
     * Added support for $search and $count advanced query parameters
+
+Azure \[bridge-adapters\] (2022-04-06)
+  \[kinetic-bridgehub-adapter-azure\] v1.0.1
+    * removed logger due to variability scan
