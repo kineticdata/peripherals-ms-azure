@@ -32,13 +32,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLSocketFactory;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
@@ -50,9 +48,6 @@ public class AzureAdapter implements BridgeAdapter {
     
     /** Defines the adapter display name */
     public static final String NAME = "Azure Bridge";
-    
-    /** Defines the logger */
-    protected static Logger logger = Logger.getLogger(AzureAdapter.class);
 
     /** Adapter version constant. */
     public static String VERSION;
@@ -63,7 +58,6 @@ public class AzureAdapter implements BridgeAdapter {
             properties.load(AzureAdapter.class.getResourceAsStream("/"+AzureAdapter.class.getName()+".version"));
             VERSION = properties.getProperty("version");
         } catch (IOException e) {
-            logger.warn("Unable to load "+AzureAdapter.class.getName()+" version properties.", e);
             VERSION = "Unknown";
         }
     }
@@ -183,7 +177,6 @@ public class AzureAdapter implements BridgeAdapter {
             String response = processGetRequest(new URL(url), this.keystorePath, this.keystorePassword);
             // Parse XML response to JSON
             jsonOutput = XML.toJSONObject(response);
-            logger.trace(jsonOutput);
         } catch (UnrecoverableKeyException ex) {
             throw new BridgeError("Unable to make a connection to properly execute the query to Azure");
         } catch (MalformedURLException ex) {
@@ -324,7 +317,6 @@ public class AzureAdapter implements BridgeAdapter {
             String response = processGetRequest(new URL(url), this.keystorePath, this.keystorePassword);
             // Parse XML response to JSON
             jsonOutput = XML.toJSONObject(response);
-            logger.trace("API Response: " + jsonOutput);
         } catch (UnrecoverableKeyException ex) {
             throw new BridgeError("Unable to make a connection to properly execute the query to Azure");
         } catch (MalformedURLException ex) {
@@ -482,7 +474,6 @@ public class AzureAdapter implements BridgeAdapter {
             String response = processGetRequest(new URL(url), this.keystorePath, this.keystorePassword);
             // Parse XML response to JSON
             jsonOutput = XML.toJSONObject(response);
-            logger.trace("API Response: " + jsonOutput);
         } catch (UnrecoverableKeyException ex) {
             throw new BridgeError("Unable to make a connection to properly execute the query to Azure");
         } catch (MalformedURLException ex) {
@@ -620,18 +611,18 @@ public class AzureAdapter implements BridgeAdapter {
     }
     
     private static String getStringFromInputStream(InputStream is) {
-          
+
         BufferedReader br = null;
         StringBuilder sb = new StringBuilder();
-  
+
         String line;
         try {
-  
+
             br = new BufferedReader(new InputStreamReader(is));
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
-  
+
         } catch (IOException e) {
         } finally {
             if (br != null) {
@@ -641,8 +632,8 @@ public class AzureAdapter implements BridgeAdapter {
                 }
             }
         }
-  
+
         return sb.toString();
     }
-    
+
 }
