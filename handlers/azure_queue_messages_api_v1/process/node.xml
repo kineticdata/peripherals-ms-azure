@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_queue_messages_api" name="Azure Queue Messages API" schema_version="1.0" version="1">
+  <author>support@kineticdata.com</author>
+  <description>A generic rest handler for Azure Queue Messages API.</description>
+  <helpurl></helpurl>
+  <visible>false</visible>
+  <deferrable>false</deferrable>
+  <parameters>
+    <parameter id="error_handling" label="Error Handling" required="true" tooltip="Determine what to return if an error is encountered." menu="Error Message,Raise Error">Error Message</parameter>
+    <parameter id="headers" label="Headers" required="false" tooltip="JSON object of headers to be addd to the request"></parameter>
+    <parameter id="method" label="Method" required="true" menu="GET,POST,PUT,PATCH,DELETE" tooltip="GET,POST,PUT,PATCH,DELETE (Defaults to GET)">GET</parameter>
+    <parameter id="storage_account" label="Storage Account" required="true" tooltip="Azure high level namespace"></parameter>
+    <parameter id="path" label="Path" required="true" tooltip="Example: /myqueue/messages"></parameter>
+    <parameter id="body" label="Body" required="false" tooltip="JSON body if applicable (POST,PUT,PATCH)"></parameter>
+  </parameters>
+  <handler name="azure_queue_messages_api" version="1">
+    <infos>
+      <info name="tenent_id">&lt;%= @info['tenent_id'] %&gt;</info>
+      <info name="client_id">&lt;%= @info['client_id'] %&gt;</info>
+      <info name="client_secret">&lt;%= @info['client_secret'] %&gt;</info>
+      <info name="enable_debug_logging">&lt;%= @info["enable_debug_logging"] %&gt;</info>
+    </infos>
+    <parameters>
+      <parameter name="error_handling">&lt;%= @parameters["error_handling"] %&gt;</parameter>
+      <parameter name="headers">&lt;%= @parameters["headers"] %&gt;</parameter>
+      <parameter name="method">&lt;%= @parameters["method"] %&gt;</parameter>
+      <parameter name="storage_account">&lt;%= @parameters["storage_account"] %&gt;</parameter>
+      <parameter name="path">&lt;%= @parameters["path"] %&gt;</parameter>
+      <parameter name="body">&lt;%= @parameters["body"] %&gt;</parameter>
+    </parameters>
+  </handler>
+  <results format="xml">
+    <result name="Response Body Raw" />
+    <result name="Messages Array" />
+    <result name="Response Code" />
+    <result name="Handler Error Message" />
+  </results>
+</taskDefinition>

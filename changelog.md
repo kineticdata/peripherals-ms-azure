@@ -18,6 +18,10 @@ Azure \[bridge-adapters\] (2020-02-07)
   \[kinetic-bridgehub-adapter-azure-rest\] v1.0.4
     * Added support for $search and $count advanced query parameters
 
+Azure \[handlers\] (2021-11-16)
+  \[azure_queue_messages_api\] v1
+    * Initial commit.
+
 Azure \[bridge-adapters\] (2022-04-06)
   \[kinetic-bridgehub-adapter-azure\] v1.0.1
     * removed logger due to variability scan
