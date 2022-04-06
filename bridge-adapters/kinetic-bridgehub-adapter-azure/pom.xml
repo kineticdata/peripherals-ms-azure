@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.kineticdata.bridges.adapter</groupId>
     <artifactId>kinetic-bridgehub-adapter-azure</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <name>kinetic-bridgehub-adapter-azure</name>
@@ -12,10 +12,25 @@
         <developerConnection>scm:git:https://github.com/kineticcommunity/kinetic-bridgehub-adapter-azure.git</developerConnection>
     </scm>
 
+    <distributionManagement>
+        <repository>
+            <id>z1_com.kineticdata.public</id>
+            <url>s3://maven-repo-public-kineticdata.com/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>z1_com.kineticdata.public</id>
+            <url>s3://maven-repo-public-kineticdata.com/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <!--
+      repo ids are prefixed with z to control maven repo usage order.
+      We want maven central to be used first as most dependencies are stored there.
+    -->
     <repositories>
         <repository>
-          <id>com.kineticdata</id>
-          <url>http://utilities.kineticdata.com/nexus/content/repositories/releases/</url>
+            <id>z1_com.kineticdata.public</id>
+            <url>https://s3.amazonaws.com/maven-repo-public-kineticdata.com/releases</url>
         </repository>
     </repositories>
 
@@ -23,37 +38,18 @@
         <dependency>
             <groupId>com.kineticdata.bridges.adapter</groupId>
             <artifactId>kinetic-bridgehub-adapter</artifactId>
-            <version>1.0.3</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20140107</version>
         </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.15</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.jdmk</groupId>
-                    <artifactId>jmxtools</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sun.jmx</groupId>
-                    <artifactId>jmxri</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.jms</groupId>
-                    <artifactId>jms</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.6</maven.compiler.source>
-        <maven.compiler.target>1.6</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
     </properties>
     <build>
