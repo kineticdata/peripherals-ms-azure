@@ -150,7 +150,7 @@ public class AzureRestTest extends BridgeAdapterTestBase{
         request.setQuery("$search=\"displayName:<%=parameter[\"Display Name\"]%>\"");
         
         request.setParameters(new HashMap<String, String>() {{ 
-            put("Display Name", "Kim Abner");
+            put("Display Name", "Chad Rehm");
         }});
         
         
