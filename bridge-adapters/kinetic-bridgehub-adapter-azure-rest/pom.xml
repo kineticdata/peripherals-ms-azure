@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.kineticdata.bridges.adapter</groupId>
     <artifactId>kinetic-bridgehub-adapter-azure-rest</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
     <packaging>jar</packaging>
-    
+
     <name>kinetic-bridgehub-adapter-azure-rest</name>
     <scm>
         <connection>scm:git:https://github.com/kineticcommunity/kinetic-bridgehub-adapter-azure.git</connection>
         <developerConnection>scm:git:https://github.com/kineticcommunity/kinetic-bridgehub-adapter-azure.git</developerConnection>
     </scm>
-    
+
     <distributionManagement>
         <repository>
             <id>z1_com.kineticdata.public</id>
@@ -29,11 +31,11 @@
     -->
     <repositories>
         <repository>
-          <id>z1_com.kineticdata.public</id>
-          <url>https://s3.amazonaws.com/maven-repo-public-kineticdata.com/releases</url>
+            <id>z1_com.kineticdata.public</id>
+            <url>https://s3.amazonaws.com/maven-repo-public-kineticdata.com/releases</url>
         </repository>
     </repositories>
-    
+
     <dependencies>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -65,7 +67,7 @@
             <artifactId>commons-lang</artifactId>
             <version>2.6</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -102,11 +104,11 @@
             </resource>
         </resources>
         <extensions>
-          <extension>
-            <groupId>org.springframework.build</groupId>
-            <artifactId>aws-maven</artifactId>
-            <version>5.0.0.RELEASE</version>
-          </extension>
+            <extension>
+                <groupId>org.springframework.build</groupId>
+                <artifactId>aws-maven</artifactId>
+                <version>5.0.0.RELEASE</version>
+            </extension>
         </extensions>
         <plugins>
             <!-- Testing -->
