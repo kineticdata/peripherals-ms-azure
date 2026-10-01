@@ -1,0 +1,5 @@
+<results>
+  <result name="Response Code" type="Regexp">^$</result>
+  <result name="From Address" type="Regexp">^noreply@example\.com$</result>
+  <result name="Handler Error Message" type="Regexp">^Invalid email address\(es\) in To: 'jane\.doe@example', 'bob@'; CC: 'x@@example\.com'\.$</result>
+</results>
