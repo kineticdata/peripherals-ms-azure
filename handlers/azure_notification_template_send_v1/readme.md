@@ -17,6 +17,7 @@ space_slug | Default space slug, used when the Space Slug input is blank.
 kapp_slug | Kapp containing the notification forms. Default `datastore`.
 form_slug_data | Form holding notification templates and snippets. Default `notification-data`.
 form_slug_dates | Form holding date formats. Default `notification-template-dates`.
+template_attachments_field | Attachment field on the template form whose files are sent with every email that uses the template. Default `Email Template Attachments`. Leave blank if templates do not have attachments.
 max_attachment_size_mb | Maximum total size, in MB, of attachments and inline images in one email. Default `25`.
 enable_debug_logging | True or False.
 
@@ -74,7 +75,7 @@ Subject | Email subject. Required.
 HTML Content | HTML body.
 Text Content | Plain text body.
 Attachments | `${attachment('Field Name')}` references to attachment fields on the related submission.
-Template Attachments | Attachment field whose files are sent with every email that uses the template.
+*template_attachments_field* | The attachment field named by the template_attachments_field property (default `Email Template Attachments`). Its files are sent with every email that uses the template.
 
 **Body:** if HTML Content has content after processing, it is sent as the body and Text Content is not sent.
 If HTML Content is blank, Text Content is sent as plain text. At least one must have content.
@@ -101,12 +102,24 @@ Content is processed in this order:
 ### Attachments
 An email can include files from two sources, and a template can use both:
 
- * **Template attachments.** Every file in the template record's **Template Attachments** field. No
-   Submission Id is needed. A `${attachment('Template Attachments')}` reference in the Attachments field refers
-   to these same files and does not attach them twice.
+ * **Template attachments.** Every file in the template record's attachment field named by the
+   template_attachments_field property (default `Email Template Attachments`) is sent automatically. Nothing needs to
+   be added to the template's Attachments field, and no Submission Id is needed. If the property names a field
+   that is not on the template form, the handler fails with an error naming the property. When the property is
+   blank, template attachments are not used.
  * **Submission attachments.** For each `${attachment('Field Name')}` in the template's **Attachments** field,
-   every file in that attachment field of the submission given by Submission Id. An attachment field that
-   exists but has no files is skipped.
+   every file in that attachment field of the submission given by Submission Id is sent. The Attachments field
+   is only for submission fields. An attachment field that exists but has no files is skipped.
+
+> **Special note on attachment field names:** an `${attachment('...')}` entry in the Attachments field that
+> names the template attachments field (the template_attachments_field value, for example
+> `${attachment('Email Template Attachments')}`) is ignored, since those files are already sent automatically.
+> As a result, a field on the related submission with that same name cannot be attached. Give submission
+> attachment fields names that differ from the template attachments field. When template_attachments_field is
+> blank, no entries are ignored.
+
+Whether a field exists is decided by the form's definition, so a field added to a form after a record was
+saved is treated as empty on that record rather than missing.
 
 Files are downloaded through the Kinetic Platform API. The api_username and api_password are only sent to
 the api_server host.
@@ -158,7 +171,8 @@ missing item, when:
  * a date format it uses has no active record, has a Format that is not a strftime pattern, or an
    `${appearance(...)}` tag has no `${format(...)}` part
  * it references submission attachments and no Submission Id was provided
- * a referenced attachment field does not exist on the submission, or is not an attachment field
+ * the template_attachments_field property names a field that is not on the template form
+ * a referenced attachment field does not exist on the submission's form, or is not an attachment field
  * an attachment or inline image cannot be downloaded
  * the attachments are over the size limit
 
@@ -183,4 +197,7 @@ When Error Handling is "Raise Error", the same message is raised instead of retu
  * The sender's display name comes from the Exchange mailbox.
  * Debug logging never writes the client secret, access tokens, upload URLs, recipient addresses, or body
    content. It does log template names, attachment file names, and sizes.
- * The handler uses only the Ruby standard library (no bundled gems).
+ * In Kinetic Task (JRuby), HTTP requests are sent with Java's built-in `HttpURLConnection`, so they use the
+   JVM's TLS settings, certificate trust store, and proxy settings (for example the `https.proxyHost` and
+   `https.proxyPort` system properties). Outside of JRuby, Ruby's `Net::HTTP` is used.
+ * The handler has no bundled gems or libraries. It runs on JRuby 1.7 and later with Java 8 and later.

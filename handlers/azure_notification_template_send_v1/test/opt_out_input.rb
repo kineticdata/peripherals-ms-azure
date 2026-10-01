@@ -11,6 +11,7 @@
     'kapp_slug' => 'datastore',
     'form_slug_data' => 'notification-data',
     'form_slug_dates' => 'notification-template-dates',
+    'template_attachments_field' => 'Email Template Attachments',
     'max_attachment_size_mb' => '25',
     'enable_debug_logging' => 'true'
   },

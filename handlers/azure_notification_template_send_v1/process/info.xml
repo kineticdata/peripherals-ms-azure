@@ -12,6 +12,7 @@
   <info name="kapp_slug" description="Kapp slug where the notification forms are located">datastore</info>
   <info name="form_slug_data" description="Form slug of the notification templates and snippets form">notification-data</info>
   <info name="form_slug_dates" description="Form slug of the notification date formats form">notification-template-dates</info>
+  <info name="template_attachments_field" description="Attachment field on the notification template form whose files are sent with every email that uses the template. Leave blank if templates do not have attachments.">Email Template Attachments</info>
   <info name="max_attachment_size_mb" description="Maximum total size, in MB, of attachments and inline images in one email">25</info>
   <info name="enable_debug_logging" description="True or False">false</info>
 </taskInfo>

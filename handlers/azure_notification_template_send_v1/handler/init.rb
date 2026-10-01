@@ -14,6 +14,22 @@ class AzureNotificationTemplateSendV1
   # human-readable message.
   class HandlerError < StandardError; end
 
+  # Response returned by http_request.  Header lookups are case-insensitive.
+  class HttpResponse
+    attr_reader :code, :body
+
+    def initialize(code, body, headers)
+      @code = code.to_s
+      @body = body.to_s
+      @headers = {}
+      headers.each { |name, value| @headers[name.to_s.downcase] = value }
+    end
+
+    def [](name)
+      @headers[name.to_s.downcase]
+    end
+  end
+
   AUTH_URL = "https://login.microsoftonline.com"
   GRAPH_URL = "https://graph.microsoft.com/v1.0"
   AUTH_LABEL = "the Microsoft identity platform (login.microsoftonline.com)"
@@ -45,7 +61,6 @@ class AzureNotificationTemplateSendV1
   UPLOAD_READ_TIMEOUT = 120
 
   CONTENT_FIELDS = ["Subject", "HTML Content", "Text Content"]
-  TEMPLATE_ATTACHMENTS_FIELD = "Template Attachments"
   SNIPPET_PATTERN = /\$\{snippet\('(.*?)'\)\}/
   ATTACHMENT_PATTERN = /\$\{attachment\('(.*?)'\)\}/
   APPEARANCE_PATTERN = /\$\{appearance\('(.*?)'\)\}(?!('\)\}))/
@@ -84,6 +99,7 @@ class AzureNotificationTemplateSendV1
     @kapp_slug = @info_values["kapp_slug"].to_s
     @form_slug_data = @info_values["form_slug_data"].to_s
     @form_slug_dates = @info_values["form_slug_dates"].to_s
+    @template_attachments_field = @info_values["template_attachments_field"].to_s
 
     @from_override = @parameters["from_override"].to_s
     @from_source = @from_override.empty? ? "the handler's from_address property" : "the From (Override) input"
@@ -469,25 +485,37 @@ class AzureNotificationTemplateSendV1
   def collect_attachments(content)
     files = []
 
-    template_description = "the Template Attachments field of notification template '#{@template_name}'"
-    attachment_field_files(@template_values[TEMPLATE_ATTACHMENTS_FIELD], template_description).each_with_index do |file, index|
-      files << file_reference(file, @template_id, TEMPLATE_ATTACHMENTS_FIELD, index, template_description)
+    unless @template_attachments_field.empty?
+      field = @template_attachments_field
+      description = "the '#{field}' field of notification template '#{@template_name}'"
+      if !@template_values.has_key?(field) && !form_field_names(@kapp_slug, @form_slug_data).include?(field)
+        raise HandlerError, "The notification template form #{@kapp_slug}/#{@form_slug_data} has no field named " \
+          "'#{field}' (the handler's template_attachments_field property). Set the property to the name of the " \
+          "attachment field that holds template files, or leave it blank if templates do not have attachments."
+      end
+      attachment_field_files(@template_values[field], description).each_with_index do |file, index|
+        files << file_reference(file, @template_id, field, index, description)
+      end
     end
 
-    fields = @template_values["Attachments"].to_s.scan(ATTACHMENT_PATTERN).flatten.uniq - [TEMPLATE_ATTACHMENTS_FIELD]
+    fields = @template_values["Attachments"].to_s.scan(ATTACHMENT_PATTERN).flatten.uniq - [@template_attachments_field]
     unless fields.empty?
       if @submission_id.empty?
         raise HandlerError, "Notification template '#{@template_name}' attaches files from submission " \
           "#{fields.size == 1 ? "field" : "fields"} #{join_list(fields.map { |field| "'#{field}'" })}, but no Submission Id was provided."
       end
-      url = "#{@api_server}/app/api/v1/submissions/#{url_encode(@submission_id)}?include=values,form"
+      url = "#{@api_server}/app/api/v1/submissions/#{url_encode(@submission_id)}?include=values,form,form.kapp"
       submission = kinetic_get(url, "retrieve submission '#{@submission_id}'",
         "Submission '#{@submission_id}' was not found. Check the Submission Id input.")["submission"] || {}
       values = submission["values"] || {}
-      form_slug = submission["form"].is_a?(Hash) ? submission["form"]["slug"] : nil
+      form = submission["form"].is_a?(Hash) ? submission["form"] : {}
+      form_slug = form["slug"]
+      kapp_slug = form["kapp"].is_a?(Hash) ? form["kapp"]["slug"] : nil
 
       fields.each do |field|
-        unless values.has_key?(field)
+        # A field added to a form after a submission was saved may be missing
+        # from its values, so the form definition decides whether it exists.
+        if !values.has_key?(field) && !(kapp_slug && form_slug && form_field_names(kapp_slug, form_slug).include?(field))
           raise HandlerError, "Notification template '#{@template_name}' attaches files from field '#{field}', which " \
             "does not exist on submission '#{@submission_id}'#{form_slug ? " (form '#{form_slug}')" : ""}."
         end
@@ -511,6 +539,19 @@ class AzureNotificationTemplateSendV1
       log("#{attachment[:inline] ? "Inline image" : "Attachment"}: #{attachment[:name]} (#{format_size(attachment[:bytes].bytesize)})")
     end
     attachments
+  end
+
+  # Names of the fields on a form, used to tell a field that does not exist
+  # from one that has no value on a record.
+  def form_field_names(kapp_slug, form_slug)
+    @form_field_names ||= {}
+    key = "#{kapp_slug}/#{form_slug}"
+    @form_field_names[key] ||= begin
+      url = "#{@api_server}/app/api/v1/kapps/#{url_encode(kapp_slug)}/forms/#{url_encode(form_slug)}?include=fields"
+      form = kinetic_get(url, "retrieve the fields of form #{key}",
+        "The kapp '#{kapp_slug}' or form '#{form_slug}' was not found.")["form"] || {}
+      (form["fields"] || []).map { |field| field["name"].to_s }
+    end
   end
 
   def attachment_field_files(value, description)
@@ -1055,12 +1096,90 @@ class AzureNotificationTemplateSendV1
     [wait, MAX_RETRY_WAIT].min
   end
 
-  # Sends a single request and returns the Net::HTTPResponse for any HTTP
-  # status.  Network level failures are translated into a HandlerError.
+  # Sends a single request and returns an HttpResponse for any HTTP status.
+  # Network level failures are translated into a HandlerError.
   # options[:sending] indicates the request sends the email, where a failure
   # after the request was written means the email may already have been sent.
+  #
+  # Under JRuby (Kinetic Task) requests are sent with Java's HttpURLConnection,
+  # which uses the JVM's TLS implementation.  JRuby's OpenSSL layer can fail
+  # large HTTPS request bodies (such as attachments) with "read would block".
+  # Net::HTTP is used when running outside of JRuby.
   def http_request(method, url, body, headers, label, options = {})
     @response_code = nil
+    response = defined?(JRUBY_VERSION) ?
+      java_http_request(method, url, body, headers, label, options) :
+      net_http_request(method, url, body, headers, label, options)
+    @response_code = response.code.to_i
+    response
+  end
+
+  def java_http_request(method, url, body, headers, label, options)
+    stage = :connect
+    connection = java.net.URL.new(url).openConnection
+    connection.setRequestMethod(method.to_s.upcase)
+    connection.setInstanceFollowRedirects(false)
+    connection.setUseCaches(false)
+    connection.setConnectTimeout(OPEN_TIMEOUT * 1000)
+    connection.setReadTimeout((options[:read_timeout] || READ_TIMEOUT) * 1000)
+    headers.each { |name, value| connection.setRequestProperty(name.to_s, value.to_s) }
+
+    # The body is buffered rather than streamed (setFixedLengthStreamingMode):
+    # in streaming mode Java discards the response body of a 401 that includes
+    # an authentication challenge, which hides Azure AD and Graph error details.
+    # Request bodies are at most about 4 MB.
+    bytes = body.nil? ? nil : body.to_java_bytes
+    connection.setDoOutput(true) if bytes
+    connection.connect
+
+    if bytes
+      stage = :write
+      output = connection.getOutputStream
+      output.write(bytes)
+      output.close
+    end
+
+    stage = :read
+    code = connection.getResponseCode
+    stream = code >= 400 ? connection.getErrorStream : connection.getInputStream
+    response_body = stream.nil? ? "" : read_java_stream(stream)
+    response_headers = {}
+    connection.getHeaderFields.each do |name, values|
+      response_headers[name] = values.to_a.join(", ") unless name.nil?
+    end
+    HttpResponse.new(code, response_body, response_headers)
+  rescue Java::JavaNet::SocketTimeoutException => e
+    if stage == :connect
+      raise HandlerError, "Timed out after #{OPEN_TIMEOUT} seconds connecting to #{label}. Check network " \
+        "connectivity and any proxy or firewall rules between Kinetic Task and #{label}."
+    else
+      raise HandlerError, timeout_message(label, options)
+    end
+  rescue Java::JavaNet::UnknownHostException => e
+    raise HandlerError, "Could not connect to #{label}: unknown host #{e.message}. Check DNS and network " \
+      "connectivity from the Kinetic Task server."
+  rescue Java::JavaxNetSsl::SSLException => e
+    raise HandlerError, tls_message(label, e.message)
+  rescue Java::JavaNet::ConnectException, Java::JavaNet::NoRouteToHostException => e
+    raise HandlerError, connect_message(label, e.message)
+  rescue Java::JavaIo::IOException => e
+    raise HandlerError, stage == :connect ? connect_message(label, e.message) : interrupted_message(label, e.message, options)
+  rescue Java::JavaLang::Exception => e
+    raise HandlerError, "An unexpected error occurred communicating with #{label}: #{e.class.name}: #{e.message}"
+  end
+
+  def read_java_stream(stream)
+    output = java.io.ByteArrayOutputStream.new
+    buffer = Java::byte[65536].new
+    while (count = stream.read(buffer)) != -1
+      output.write(buffer, 0, count)
+    end
+    String.from_java_bytes(output.toByteArray)
+  ensure
+    stream.close
+  end
+
+  def net_http_request(method, url, body, headers, label, options)
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host, uri.port)
     if uri.scheme == "https"
@@ -1081,35 +1200,54 @@ class AzureNotificationTemplateSendV1
     request.body = body unless body.nil?
 
     response = http.request(request)
-    @response_code = response.code.to_i
-    response
+    response_headers = {}
+    response.each_header { |name, value| response_headers[name] = value }
+    HttpResponse.new(response.code, response.body, response_headers)
   rescue Timeout::Error => e
     if defined?(Net::OpenTimeout) && e.is_a?(Net::OpenTimeout)
       raise HandlerError, "Timed out after #{OPEN_TIMEOUT} seconds connecting to #{label}. Check network " \
         "connectivity and any proxy or firewall rules between Kinetic Task and #{label}."
-    elsif options[:sending]
-      @send_outcome_unknown = true
-      raise HandlerError, "Timed out waiting for Microsoft Graph to respond. The email may or may not have been " \
-        "sent; check the Sent Items folder of #{@sender} before trying again."
     else
-      raise HandlerError, "Timed out waiting for a response from #{label}. Try again later."
+      raise HandlerError, timeout_message(label, options)
     end
   rescue SocketError => e
     raise HandlerError, "Could not connect to #{label}: #{e.message}. Check DNS and network connectivity " \
       "from the Kinetic Task server."
   rescue OpenSSL::SSL::SSLError => e
-    raise HandlerError, "Could not establish a secure (TLS) connection to #{label}: #{e.message}. A proxy " \
-      "that intercepts TLS traffic or an outdated certificate store is a common cause."
+    raise HandlerError, tls_message(label, e.message)
   rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, Errno::ETIMEDOUT => e
-    raise HandlerError, "Could not connect to #{label}: #{e.message}. Check network connectivity and any " \
-      "proxy or firewall rules between Kinetic Task and #{label}."
+    raise HandlerError, connect_message(label, e.message)
   rescue Errno::ECONNRESET, Errno::EPIPE, EOFError => e
-    message = "The connection to #{label} was interrupted: #{e.message}."
+    raise HandlerError, interrupted_message(label, e.message, options)
+  end
+
+  def timeout_message(label, options)
+    if options[:sending]
+      @send_outcome_unknown = true
+      "Timed out waiting for Microsoft Graph to respond. The email may or may not have been sent; check the " \
+        "Sent Items folder of #{@sender} before trying again."
+    else
+      "Timed out waiting for a response from #{label}. Try again later."
+    end
+  end
+
+  def tls_message(label, detail)
+    "Could not establish a secure (TLS) connection to #{label}: #{detail}. A proxy that intercepts TLS " \
+      "traffic or an outdated certificate store is a common cause."
+  end
+
+  def connect_message(label, detail)
+    "Could not connect to #{label}: #{detail}. Check network connectivity and any proxy or firewall rules " \
+      "between Kinetic Task and #{label}."
+  end
+
+  def interrupted_message(label, detail, options)
+    message = "The connection to #{label} was interrupted: #{detail}."
     if options[:sending]
       @send_outcome_unknown = true
       message << " The email may or may not have been sent; check the Sent Items folder of #{@sender} before trying again."
     end
-    raise HandlerError, message
+    message
   end
 
   ##############################################################################
@@ -1176,7 +1314,7 @@ class AzureNotificationTemplateSendV1
   ##############################################################################
 
   def parse_json(string)
-    JSON.parse(string.to_s)
+    JSON.parse(utf8(string))
   rescue JSON::ParserError
     nil
   end
@@ -1225,8 +1363,16 @@ class AzureNotificationTemplateSendV1
     text.empty? ? text : "#{text[0, 1].upcase}#{text[1..-1]}"
   end
 
+  # Response bodies are binary strings; this makes them safe to parse and to
+  # include in messages.
+  def utf8(string)
+    value = string.to_s.dup.force_encoding("UTF-8")
+    return value if value.valid_encoding?
+    value.encode("UTF-16BE", :invalid => :replace, :undef => :replace, :replace => "?").encode("UTF-8")
+  end
+
   def truncate(string, length = 300)
-    value = string.to_s.strip.gsub(/\s+/, " ")
+    value = utf8(string).strip.gsub(/\s+/, " ")
     value.length > length ? "#{value[0, length]}..." : value
   end
 

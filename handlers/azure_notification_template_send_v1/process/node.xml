@@ -27,6 +27,7 @@
       <info name="kapp_slug">&lt;%= @info['kapp_slug'] %&gt;</info>
       <info name="form_slug_data">&lt;%= @info['form_slug_data'] %&gt;</info>
       <info name="form_slug_dates">&lt;%= @info['form_slug_dates'] %&gt;</info>
+      <info name="template_attachments_field">&lt;%= @info['template_attachments_field'] %&gt;</info>
       <info name="max_attachment_size_mb">&lt;%= @info['max_attachment_size_mb'] %&gt;</info>
       <info name="enable_debug_logging">&lt;%= @info['enable_debug_logging'] %&gt;</info>
     </infos>
