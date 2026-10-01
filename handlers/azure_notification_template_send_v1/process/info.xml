@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<taskInfo version="1.0">
+  <info name="tenant_id" description="Azure Directory (Tenant) Id"></info>
+  <info name="client_id" description="Application (Client) Id"></info>
+  <info name="client_secret" description="Application Client Secret (the secret Value, not the Secret ID)" type="encrypted"></info>
+  <info name="from_address" description="Default sender mailbox (e.g. noreply@contoso.com). Can be overridden per task with the From (Override) input."></info>
+  <info name="api_server" description="Kinetic Platform server URL, e.g. https://server/kinetic or https://my-space.kinops.io. ${space} is replaced with the space slug.">http://server:port/kinetic</info>
+  <info name="api_username" description="Kinetic user with access to the notification forms and related submissions"></info>
+  <info name="api_password" description="Password for the Kinetic user" type="encrypted"></info>
+  <info name="space_slug" description="Default space slug (used when the Space Slug input is blank)"></info>
+  <info name="kapp_slug" description="Kapp slug where the notification forms are located">datastore</info>
+  <info name="form_slug_data" description="Form slug of the notification templates and snippets form">notification-data</info>
+  <info name="form_slug_dates" description="Form slug of the notification date formats form">notification-template-dates</info>
+  <info name="max_attachment_size_mb" description="Maximum total size, in MB, of attachments and inline images in one email">25</info>
+  <info name="enable_debug_logging" description="True or False">false</info>
+</taskInfo>
