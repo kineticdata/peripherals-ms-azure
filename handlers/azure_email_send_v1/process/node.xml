@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_email_send" name="Azure Email Send" schema_version="1.0" version="1">
+  <author>support@kineticdata.com</author>
+  <description>Sends an email through the Microsoft Graph API sendMail endpoint.</description>
+  <helpurl></helpurl>
+  <visible>true</visible>
+  <deferrable>false</deferrable>
+  <parameters>
+    <parameter id="error_handling" label="Error Handling" required="true" tooltip="Determine what to return if an error is encountered." menu="Error Message,Raise Error">Error Message</parameter>
+    <parameter id="from_override" label="From (Override)" required="false" tooltip="Sender mailbox to use instead of the handler's configured from_address. Leave blank to use the configured address."></parameter>
+    <parameter id="to" label="To" required="false" tooltip="Comma or semicolon separated list of addresses. Display names are supported: Jane Doe &lt;jane@example.com&gt;. At least one recipient is required across To, CC, and BCC."></parameter>
+    <parameter id="cc" label="CC" required="false" tooltip="Comma or semicolon separated list of addresses."></parameter>
+    <parameter id="bcc" label="BCC" required="false" tooltip="Comma or semicolon separated list of addresses."></parameter>
+    <parameter id="subject" label="Subject" required="true" tooltip="Subject of the email."></parameter>
+    <parameter id="html_body" label="HTML Body" required="false" tooltip="HTML content of the email. If both HTML Body and Text Body are provided, only the HTML Body is sent."></parameter>
+    <parameter id="text_body" label="Text Body" required="false" tooltip="Plain text content of the email. Only sent when HTML Body is blank."></parameter>
+  </parameters>
+  <handler name="azure_email_send" version="1">
+    <infos>
+      <info name="tenant_id">&lt;%= @info['tenant_id'] %&gt;</info>
+      <info name="client_id">&lt;%= @info['client_id'] %&gt;</info>
+      <info name="client_secret">&lt;%= @info['client_secret'] %&gt;</info>
+      <info name="azure_cloud">&lt;%= @info['azure_cloud'] %&gt;</info>
+      <info name="from_address">&lt;%= @info['from_address'] %&gt;</info>
+      <info name="enable_debug_logging">&lt;%= @info["enable_debug_logging"] %&gt;</info>
+    </infos>
+    <parameters>
+      <parameter name="error_handling">&lt;%= @parameters["error_handling"] %&gt;</parameter>
+      <parameter name="from_override">&lt;%= @parameters["from_override"] %&gt;</parameter>
+      <parameter name="to">&lt;%= @parameters["to"] %&gt;</parameter>
+      <parameter name="cc">&lt;%= @parameters["cc"] %&gt;</parameter>
+      <parameter name="bcc">&lt;%= @parameters["bcc"] %&gt;</parameter>
+      <parameter name="subject">&lt;%= @parameters["subject"] %&gt;</parameter>
+      <parameter name="html_body">&lt;%= @parameters["html_body"] %&gt;</parameter>
+      <parameter name="text_body">&lt;%= @parameters["text_body"] %&gt;</parameter>
+    </parameters>
+  </handler>
+  <results format="xml">
+    <result name="Response Code"/>
+    <result name="From Address"/>
+    <result name="Handler Error Message"/>
+  </results>
+</taskDefinition>
