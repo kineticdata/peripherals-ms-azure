@@ -3,6 +3,7 @@
     'tenant_id' => '',
     'client_id' => '',
     'client_secret' => '',
+    'azure_cloud' => 'Global',
     'from_address' => '',
     'api_server' => 'https://my-space.kinops.io',
     'api_username' => '',

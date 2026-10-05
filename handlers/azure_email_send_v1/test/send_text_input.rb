@@ -3,6 +3,7 @@
     'tenant_id' => "",
     'client_id' => "",
     'client_secret' => "",
+    'azure_cloud' => 'Global',
     'from_address' => "",
     'enable_debug_logging' => 'true'
   },

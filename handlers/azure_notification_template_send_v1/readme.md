@@ -9,6 +9,7 @@ Name | Description
 tenant_id | Azure Directory (Tenant) Id. Either the GUID or a domain such as `contoso.onmicrosoft.com`.
 client_id | Application (Client) Id of the Azure app registration.
 client_secret | Client secret of the Azure app registration. Use the secret's **Value**, not its Secret ID.
+azure_cloud | Microsoft cloud of the tenant: `Global` (default), `GCC High`, `DoD`, or `China`. GCC (Moderate) tenants use `Global`. See Microsoft Clouds.
 from_address | Default sender mailbox (e.g. `noreply@contoso.com`). Used when From (Override) is blank.
 api_server | Kinetic Platform server URL, e.g. `https://server/kinetic` or `https://my-space.kinops.io`. If it contains `${space}`, that is replaced with the space slug; otherwise a space slug, when provided, is appended as `/<space slug>`.
 api_username | Kinetic user with access to the notification forms and to the related submissions.
@@ -132,8 +133,9 @@ close to the largest total most mailboxes accept.
 
 ### How the Email Is Sent
 An access token is fetched on every execution from
-`https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/token` (client credentials, scope
-`https://graph.microsoft.com/.default`). A copy of each email is saved to the sender's Sent Items. The handler
+`https://<sign-in host>/<tenant_id>/oauth2/v2.0/token` (client credentials, scope `https://<Graph host>/.default`),
+and Graph requests go to `https://<Graph host>/v1.0`, where the hosts come from azure_cloud (see Microsoft
+Clouds). A copy of each email is saved to the sender's Sent Items. The handler
 uses one of two methods, based on the size of the request:
 
  * **Single request.** When the message and its base64 encoded attachments add up to about 3.5 MB or less
@@ -150,8 +152,27 @@ uses one of two methods, based on the size of the request:
    If the send itself times out, the draft is kept because the email may have gone out. The error says to check
    the Sent Items and Drafts folders.
 
+### Microsoft Clouds
+The azure_cloud property selects the Microsoft sign-in and Graph endpoints for the tenant's cloud. Tokens from
+one cloud are not accepted by another, so it must match the cloud where the tenant and app registration live.
+
+azure_cloud | Sign-in host | Graph host
+----------- | ------------- | -------------
+Global (default) | `login.microsoftonline.com` | `graph.microsoft.com`
+GCC High | `login.microsoftonline.us` | `graph.microsoft.us`
+DoD | `login.microsoftonline.us` | `dod-graph.microsoft.us`
+China | `login.chinacloudapi.cn` | `microsoftgraph.chinacloudapi.cn`
+
+ * GCC (Moderate) tenants use `Global`. `GCC` and `GCC Moderate` are accepted as other names for `Global`.
+ * Case, spaces, hyphens, and underscores are ignored, so `gcc-high` and `GCCHigh` both mean GCC High. Any other
+   value fails before anything is sent.
+ * When Microsoft returns an error that a cloud mismatch can cause (for example, tenant not found or a rejected
+   access token), the error message suggests checking azure_cloud.
+
 ### Azure Setup
- 1. Create an app registration in Azure (Microsoft Entra ID) and create a client secret for it.
+ 1. Create an app registration in Azure (Microsoft Entra ID) and create a client secret for it. For GCC High and
+    DoD tenants, use the Azure Government portal (`https://portal.azure.us`); for China, use
+    `https://portal.azure.cn`.
  2. Under **API permissions**, add these Microsoft Graph **Application** permissions and **grant admin consent**:
     * `Mail.Send`, required for every email.
     * `Mail.ReadWrite`, required for emails sent with the draft method (attachments over about 3.5 MB in

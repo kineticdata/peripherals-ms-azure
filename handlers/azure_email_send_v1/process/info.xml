@@ -4,6 +4,7 @@
   <info name="tenant_id" description="Azure Directory (Tenant) Id"></info>
   <info name="client_id" description="Application (Client) Id"></info>
   <info name="client_secret" description="Application Client Secret (the secret Value, not the Secret ID)" type="encrypted"></info>
+  <info name="azure_cloud" description="Microsoft cloud of the tenant: Global, GCC High, DoD, or China. GCC (Moderate) tenants use Global.">Global</info>
   <info name="from_address" description="Default sender mailbox (e.g. noreply@contoso.com). Can be overridden per task with the From (Override) input."></info>
   <info name="enable_debug_logging" description="True or False">false</info>
 </taskInfo>

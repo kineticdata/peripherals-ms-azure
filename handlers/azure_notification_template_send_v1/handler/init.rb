@@ -30,11 +30,15 @@ class AzureNotificationTemplateSendV1
     end
   end
 
-  AUTH_URL = "https://login.microsoftonline.com"
-  GRAPH_URL = "https://graph.microsoft.com/v1.0"
-  AUTH_LABEL = "the Microsoft identity platform (login.microsoftonline.com)"
-  GRAPH_LABEL = "Microsoft Graph (graph.microsoft.com)"
-  UPLOAD_LABEL = "the Outlook attachment upload service (outlook.office.com)"
+  # Microsoft cloud endpoints, selected by the azure_cloud property.  GCC
+  # (Moderate) tenants use the Global endpoints.
+  CLOUDS = {
+    "global" => { :name => "Global", :auth => "https://login.microsoftonline.com", :graph => "https://graph.microsoft.com" },
+    "gcchigh" => { :name => "GCC High", :auth => "https://login.microsoftonline.us", :graph => "https://graph.microsoft.us" },
+    "dod" => { :name => "DoD", :auth => "https://login.microsoftonline.us", :graph => "https://dod-graph.microsoft.us" },
+    "china" => { :name => "China", :auth => "https://login.chinacloudapi.cn", :graph => "https://microsoftgraph.chinacloudapi.cn" }
+  }
+  CLOUD_ALIASES = { "" => "global", "gcc" => "global", "gccmoderate" => "global" }
 
   # Exchange Online limit on To + CC + BCC for a single message.
   MAX_RECIPIENTS = 500
@@ -94,6 +98,15 @@ class AzureNotificationTemplateSendV1
     @tenant_id = @info_values["tenant_id"].to_s
     @client_id = @info_values["client_id"].to_s
     @client_secret = @info_values["client_secret"].to_s
+    @azure_cloud = @info_values["azure_cloud"].to_s.strip
+    cloud_key = @azure_cloud.downcase.gsub(/[\s_-]/, "")
+    @cloud = CLOUDS[CLOUD_ALIASES[cloud_key] || cloud_key]
+    endpoints = @cloud || CLOUDS["global"]
+    @auth_url = endpoints[:auth]
+    @graph_url = "#{endpoints[:graph]}/v1.0"
+    @graph_scope = "#{endpoints[:graph]}/.default"
+    @auth_label = "the Microsoft identity platform (#{host_of(endpoints[:auth])})"
+    @graph_label = "Microsoft Graph (#{host_of(endpoints[:graph])})"
     @api_username = @info_values["api_username"].to_s
     @api_password = @info_values["api_password"].to_s
     @kapp_slug = @info_values["kapp_slug"].to_s
@@ -184,6 +197,11 @@ class AzureNotificationTemplateSendV1
     unless missing.empty?
       problems << "The handler configuration is missing #{join_list(missing)}. " \
         "Set #{missing.size == 1 ? "it" : "them"} in the handler's properties in Kinetic Task."
+    end
+
+    if @cloud.nil?
+      problems << "The handler's azure_cloud property '#{@azure_cloud}' is not recognized. Use Global, GCC High, " \
+        "DoD, or China (GCC Moderate tenants use Global)."
     end
 
     if @from_value.empty?
@@ -687,7 +705,7 @@ class AzureNotificationTemplateSendV1
 
   def deliver(token, message, attachments)
     @token = token
-    @mailbox_url = "#{GRAPH_URL}/users/#{url_encode(@sender)}"
+    @mailbox_url = "#{@graph_url}/users/#{url_encode(@sender)}"
 
     request_size = JSON.generate(message).bytesize +
       attachments.inject(0) { |sum, attachment| sum + base64_length(attachment[:bytes].bytesize) + attachment[:name].bytesize + 300 }
@@ -772,6 +790,7 @@ class AzureNotificationTemplateSendV1
   def upload_chunks(upload_url, attachment)
     bytes = attachment[:bytes]
     total = bytes.bytesize
+    upload_label = "the Outlook attachment upload service (#{host_of(upload_url)})"
     offset = 0
     max_requests = (total / UPLOAD_CHUNK_BYTES) * 2 + 5
 
@@ -783,7 +802,7 @@ class AzureNotificationTemplateSendV1
         "Content-Range" => "bytes #{offset}-#{last}/#{total}"
       }
       log("Uploading #{attachment[:name]} bytes #{offset}-#{last} of #{total}")
-      response = request_with_retries(:put, upload_url, chunk, headers, UPLOAD_LABEL, :read_timeout => UPLOAD_READ_TIMEOUT)
+      response = request_with_retries(:put, upload_url, chunk, headers, upload_label, :read_timeout => UPLOAD_READ_TIMEOUT)
       code = response.code.to_i
 
       return if code == 201
@@ -811,7 +830,7 @@ class AzureNotificationTemplateSendV1
         "folders of #{@sender}."
     end
     failed_response_code = @response_code
-    response = http_request(:delete, draft_url, nil, { "Authorization" => "Bearer #{@token}" }, GRAPH_LABEL)
+    response = http_request(:delete, draft_url, nil, { "Authorization" => "Bearer #{@token}" }, @graph_label)
     @response_code = failed_response_code
     if response.code.to_i < 300
       " The unsent draft was deleted from the Drafts folder of #{@sender}."
@@ -842,17 +861,17 @@ class AzureNotificationTemplateSendV1
   ##############################################################################
 
   def fetch_access_token
-    url = "#{AUTH_URL}/#{url_encode(@tenant_id)}/oauth2/v2.0/token"
+    url = "#{@auth_url}/#{url_encode(@tenant_id)}/oauth2/v2.0/token"
     log("Requesting access token from #{url}")
 
     form = URI.encode_www_form(
       "client_id" => @client_id,
       "client_secret" => @client_secret,
       "grant_type" => "client_credentials",
-      "scope" => "https://graph.microsoft.com/.default"
+      "scope" => @graph_scope
     )
     response = http_request(:post, url, form,
-      { "Content-Type" => "application/x-www-form-urlencoded", "Accept" => "application/json" }, AUTH_LABEL)
+      { "Content-Type" => "application/x-www-form-urlencoded", "Accept" => "application/json" }, @auth_label)
 
     body = parse_json(response.body)
     code = response.code.to_i
@@ -879,9 +898,12 @@ class AzureNotificationTemplateSendV1
           "(Certificates & secrets) and update the handler's client_secret property."
       when "700016"
         "The client ID was not found in tenant '#{@tenant_id}'. Check the handler's client_id property " \
-          "and that the app is registered in this tenant."
+          "and that the app is registered in this tenant.#{cloud_hint}"
       when "90002"
-        "The tenant '#{@tenant_id}' was not found. Check the handler's tenant_id property."
+        "The tenant '#{@tenant_id}' was not found. Check the handler's tenant_id property.#{cloud_hint}"
+      when "900382"
+        "The tenant and app registration are in a different Microsoft cloud than the handler's azure_cloud property " \
+          "(#{(@cloud || CLOUDS["global"])[:name]}). Set azure_cloud to the tenant's cloud: Global, GCC High, DoD, or China."
       when "900023"
         "'#{@tenant_id}' is not a valid tenant identifier. Set the handler's tenant_id property to the " \
           "Directory (tenant) ID GUID or a domain such as contoso.onmicrosoft.com."
@@ -889,7 +911,7 @@ class AzureNotificationTemplateSendV1
         if code == 200
           "Azure AD responded but did not return an access token."
         elsif code == 400 || code == 401
-          "Could not get an access token from Azure AD; the tenant_id, client_id, or client_secret property appears to be wrong."
+          "Could not get an access token from Azure AD; the tenant_id, client_id, or client_secret property appears to be wrong.#{cloud_hint}"
         elsif code == 429
           "Azure AD is throttling token requests. Try again shortly."
         elsif code >= 500
@@ -926,7 +948,7 @@ class AzureNotificationTemplateSendV1
       "Content-Type" => "application/json; charset=utf-8",
       "Accept" => "application/json"
     }
-    response, retries = request_with_retries(method, url, body, headers, GRAPH_LABEL, options.merge(:return_retries => true))
+    response, retries = request_with_retries(method, url, body, headers, @graph_label, options.merge(:return_retries => true))
     code = response.code.to_i
     log("Graph: #{action} -> HTTP #{code}")
     return response if code >= 200 && code < 300
@@ -974,12 +996,12 @@ class AzureNotificationTemplateSendV1
       when "ErrorExceededMessageLimit", "ErrorQuotaExceeded"
         "The sender mailbox #{@sender} has reached an Exchange Online sending limit. Try again later or use a different sender."
       when "InvalidAuthenticationToken"
-        "Microsoft Graph rejected the access token. Check that the app registration belongs to tenant '#{@tenant_id}'."
+        "Microsoft Graph rejected the access token. Check that the app registration belongs to tenant '#{@tenant_id}'.#{cloud_hint}"
       else
         if code == 400
           "Microsoft Graph rejected the request as invalid."
         elsif code == 401
-          "Microsoft Graph rejected the access token. Check that the app registration belongs to tenant '#{@tenant_id}'."
+          "Microsoft Graph rejected the access token. Check that the app registration belongs to tenant '#{@tenant_id}'.#{cloud_hint}"
         elsif code == 403
           access_denied
         elsif code == 404
@@ -1353,6 +1375,16 @@ class AzureNotificationTemplateSendV1
     else
       "#{format("%.1f", bytes / (1024.0 * 1024.0)).sub(/\.0\z/, "")} MB"
     end
+  end
+
+  # Appended to errors that a tenant in a different Microsoft cloud can cause.
+  def cloud_hint
+    " If this tenant is in a different Microsoft cloud (such as GCC High or DoD), set the handler's azure_cloud " \
+      "property; it is currently #{(@cloud || CLOUDS["global"])[:name]}."
+  end
+
+  def host_of(url)
+    url.to_s[%r{\Ahttps?://([^/:?#]+)}i, 1].to_s
   end
 
   def join_list(items)

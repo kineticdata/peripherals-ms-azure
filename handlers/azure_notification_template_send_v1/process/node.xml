@@ -19,6 +19,7 @@
       <info name="tenant_id">&lt;%= @info['tenant_id'] %&gt;</info>
       <info name="client_id">&lt;%= @info['client_id'] %&gt;</info>
       <info name="client_secret">&lt;%= @info['client_secret'] %&gt;</info>
+      <info name="azure_cloud">&lt;%= @info['azure_cloud'] %&gt;</info>
       <info name="from_address">&lt;%= @info['from_address'] %&gt;</info>
       <info name="api_server">&lt;%= @info['api_server'] %&gt;</info>
       <info name="api_username">&lt;%= @info['api_username'] %&gt;</info>

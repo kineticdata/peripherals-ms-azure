@@ -7,6 +7,7 @@ Name | Description
 tenant_id | Azure Directory (Tenant) Id. Either the GUID or a domain such as `contoso.onmicrosoft.com`.
 client_id | Application (Client) Id of the Azure app registration.
 client_secret | Client secret of the Azure app registration. Use the secret's **Value**, not its Secret ID.
+azure_cloud | Microsoft cloud of the tenant: `Global` (default), `GCC High`, `DoD`, or `China`. GCC (Moderate) tenants use `Global`. See Microsoft Clouds.
 from_address | Default sender mailbox (e.g. `noreply@contoso.com`). Used when From (Override) is blank.
 enable_debug_logging | True or False.
 
@@ -29,7 +30,7 @@ is required across To, CC, and BCC, so a BCC-only send is allowed.
 ### Results
 Name | Description
 ----------- | -------------
-Response Code | The HTTP code of the last request made. `202` when the email was accepted by Microsoft Graph.
+Response Code | The HTTP code of the last response received. `202` when the email was accepted by Microsoft Graph. Empty when the handler stopped before receiving a response (for example, when an input failed validation or the connection failed).
 From Address | The sender mailbox that was used (the override if provided, otherwise `from_address`).
 Handler Error Message | Error message if an error was encountered and Error Handling is set to "Error Message".
 
@@ -68,8 +69,27 @@ send a multipart/alternative message containing both.
  * If HTML Body is blank, Text Body is sent as plain text.
  * At least one of the two must have content.
 
+### Microsoft Clouds
+The azure_cloud property selects the Microsoft sign-in and Graph endpoints for the tenant's cloud. Tokens from
+one cloud are not accepted by another, so it must match the cloud where the tenant and app registration live.
+
+azure_cloud | Sign-in host | Graph host
+----------- | ------------- | -------------
+Global (default) | `login.microsoftonline.com` | `graph.microsoft.com`
+GCC High | `login.microsoftonline.us` | `graph.microsoft.us`
+DoD | `login.microsoftonline.us` | `dod-graph.microsoft.us`
+China | `login.chinacloudapi.cn` | `microsoftgraph.chinacloudapi.cn`
+
+ * GCC (Moderate) tenants use `Global`. `GCC` and `GCC Moderate` are accepted as other names for `Global`.
+ * Case, spaces, hyphens, and underscores are ignored, so `gcc-high` and `GCCHigh` both mean GCC High. Any other
+   value fails before anything is sent.
+ * When Microsoft returns an error that a cloud mismatch can cause (for example, tenant not found or a rejected
+   access token), the error message suggests checking azure_cloud.
+
 ### Azure Setup
- 1. Create an app registration in Azure (Microsoft Entra ID) and create a client secret for it.
+ 1. Create an app registration in Azure (Microsoft Entra ID) and create a client secret for it. For GCC High and
+    DoD tenants, use the Azure Government portal (`https://portal.azure.us`); for China, use
+    `https://portal.azure.cn`.
  2. Under **API permissions**, add the Microsoft Graph **Application** permission `Mail.Send` (not the
     Delegated permission) and **grant admin consent**.
  3. The sender (`from_address` or From (Override)) must be an Exchange Online user or shared mailbox in the
@@ -95,10 +115,10 @@ When Error Handling is "Raise Error", the same message is raised instead of retu
 
 ### Notes
  * An access token is fetched on every execution from
-   `https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/token` using the client credentials grant with
-   a scope of `https://graph.microsoft.com/.default`.
- * The email is sent with `POST https://graph.microsoft.com/v1.0/users/<sender>/sendMail` and a copy is
-   saved to the sender's Sent Items.
+   `https://<sign-in host>/<tenant_id>/oauth2/v2.0/token` using the client credentials grant with a scope of
+   `https://<Graph host>/.default`, where the hosts come from azure_cloud (see Microsoft Clouds).
+ * The email is sent with `POST https://<Graph host>/v1.0/users/<sender>/sendMail` and a copy is saved to
+   the sender's Sent Items.
  * Graph does not return a message id for `sendMail`. A `202` response means the message was accepted for
    delivery.
  * Exchange Online allows at most 500 recipients (To + CC + BCC) per message.
@@ -108,4 +128,7 @@ When Error Handling is "Raise Error", the same message is raised instead of retu
    been sent. The error message says so; check the sender's Sent Items before running the task again.
  * Debug logging never writes the client secret, access token, recipient addresses, or body content.
  * Attachments are not supported in this version.
- * The handler uses only the Ruby standard library (no bundled gems).
+ * In Kinetic Task (JRuby), HTTP requests are sent with Java's built-in `HttpURLConnection`, so they use the
+   JVM's TLS settings, certificate trust store, and proxy settings (for example the `https.proxyHost` and
+   `https.proxyPort` system properties). Outside of JRuby, Ruby's `Net::HTTP` is used.
+ * The handler has no bundled gems or libraries. It runs on JRuby 1.7 and later with Java 8 and later.
