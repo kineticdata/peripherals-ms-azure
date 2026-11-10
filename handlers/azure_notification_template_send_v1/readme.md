@@ -123,7 +123,10 @@ Whether a field exists is decided by the form's definition, so a field added to 
 saved is treated as empty on that record rather than missing.
 
 Files are downloaded through the Kinetic Platform API. The api_username and api_password are only sent to
-the api_server host.
+the api_server host. Attachments are downloaded from the Core API file endpoint
+(`/app/api/v1/submissions/{id}/files/{field}/{index}/{name}`), which returns the file or redirects to the file
+store. If that endpoint returns 404, the handler falls back to asking `.../url` for a download link and
+downloading that link.
 
 **Size limit:** the total of all attachments and inline images cannot be more than max_attachment_size_mb
 (default 25 MB). The handler checks the sizes recorded in Kinetic before downloading anything, and checks again

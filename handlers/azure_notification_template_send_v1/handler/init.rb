@@ -599,18 +599,40 @@ class AzureNotificationTemplateSendV1
     }
   end
 
+  # Downloads a submission attachment.
+  #
+  # Primary route: the Core API file endpoint
+  # (/app/api/v1/submissions/{id}/files/{field}/{index}/{name}) returns the file
+  # itself, or redirects to the file store, and accepts the handler's API
+  # credentials.  It stays on /app/api, so it does not depend on the browser
+  # download path (/submissions/...), which some installs do not accept API
+  # credentials on or route differently (for example a proxy rule that sends it
+  # to /), causing a redirect loop.
+  #
+  # Fallback route, used only when the primary route returns HTTP 404 (for
+  # example a platform version without that endpoint): ask the .../url endpoint
+  # for a download link and download that link.
   def download_attachment(file)
     @phase = "downloading attachment '#{file[:name]}'"
-    url = "#{@api_server}/app/api/v1/submissions/#{url_encode(file[:submission_id])}/files/#{url_encode(file[:field])}" \
-      "/#{file[:index]}/#{url_encode(file[:name])}/url"
-    link = kinetic_get(url, "get a download link for '#{file[:name]}' from #{file[:description]}",
-      "The file '#{file[:name]}' was not found in #{file[:description]}.")["url"].to_s
-    if link.empty?
-      raise HandlerError, "The Kinetic Platform did not return a download link for '#{file[:name]}' from #{file[:description]}."
-    end
-    link = "#{origin(@api_server)}#{link}" if link.start_with?("/")
+    description = "attachment '#{file[:name]}' from #{file[:description]}"
+    file_url = "#{@api_server}/app/api/v1/submissions/#{url_encode(file[:submission_id])}/files/#{url_encode(file[:field])}" \
+      "/#{file[:index]}/#{url_encode(file[:name])}"
 
-    response = download(link, "attachment '#{file[:name]}' from #{file[:description]}")
+    response = download(file_url, description, :pass_codes => [404])
+    if response.code.to_i == 404
+      log("The Core API file endpoint returned HTTP 404 for #{file[:name]}; falling back to the download link from .../url.")
+      link = kinetic_get("#{file_url}/url", "get a download link for '#{file[:name]}' from #{file[:description]}",
+        "The file '#{file[:name]}' was not found in #{file[:description]}.")["url"].to_s
+      if link.empty?
+        raise HandlerError, "The Kinetic Platform did not return a download link for '#{file[:name]}' from #{file[:description]}."
+      end
+      link = "#{origin(@api_server)}#{link}" if link.start_with?("/")
+
+      response = download(link, description)
+      log("Downloaded #{file[:name]} through the download link from .../url (fallback route).")
+    else
+      log("Downloaded #{file[:name]} through the Core API file endpoint (primary route).")
+    end
     content_type = file[:content_type].empty? ? media_type(response) : file[:content_type]
     { :name => file[:name], :content_type => content_type, :bytes => response.body.to_s, :inline => false }
   end
@@ -649,9 +671,18 @@ class AzureNotificationTemplateSendV1
   end
 
   # GETs a file, following redirects.  The Kinetic API credentials are only
-  # sent to the api_server host.
-  def download(url, description)
+  # sent to the api_server host.  Each hop is recorded (HTTP status, URL without
+  # its query string, and whether the Kinetic credentials were sent) and written
+  # to the debug log.  When the download fails after one or more redirects, the
+  # redirect chain is included in the error message so a redirect loop or an
+  # unexpected hop (such as an SSO login page, or a hop to a host other than
+  # api_server that therefore gets no credentials) can be seen without
+  # reproducing the request by hand.  options[:pass_codes] lists final HTTP
+  # status codes (other than 200) that are returned to the caller instead of
+  # raising an error, so the caller can choose another route.
+  def download(url, description, options = {})
     redirects = 0
+    hops = []
     loop do
       url = url.strip.gsub(" ", "%20")
       uri = begin
@@ -660,24 +691,49 @@ class AzureNotificationTemplateSendV1
         raise HandlerError, "Could not download #{description}: '#{url}' is not a valid URL."
       end
       headers = {}
-      headers["Authorization"] = kinetic_authorization if uri.host.to_s.downcase == URI.parse(@api_server).host.to_s.downcase
+      send_credentials = uri.host.to_s.downcase == URI.parse(@api_server).host.to_s.downcase
+      headers["Authorization"] = kinetic_authorization if send_credentials
       log("Downloading #{description} from #{uri.host}")
 
       response = request_with_retries(:get, url, nil, headers, uri.host.to_s, :read_timeout => UPLOAD_READ_TIMEOUT)
       code = response.code.to_i
-      if REDIRECT_CODES.include?(code) && !response["Location"].to_s.empty?
+      location = response["Location"].to_s
+      hops << "HTTP #{code} from #{redact_url(url)}#{send_credentials ? " (with Kinetic credentials)" : " (no credentials)"}"
+
+      if REDIRECT_CODES.include?(code) && !location.empty?
+        next_url = begin
+          URI.join(url, location).to_s
+        rescue URI::Error
+          raise HandlerError, "Could not download #{description}: #{redact_url(url)} redirected to a Location " \
+            "that is not a valid URL. #{redirect_chain(hops)}"
+        end
+        log("Download hop #{hops.size}: #{hops.last}, redirecting to #{redact_url(next_url)}")
         if redirects >= MAX_REDIRECTS
-          raise HandlerError, "Could not download #{description}: it redirected more than #{MAX_REDIRECTS} times."
+          raise HandlerError, "Could not download #{description}: it redirected more than #{MAX_REDIRECTS} times. " \
+            "#{redirect_chain(hops, next_url)}"
         end
         redirects += 1
-        url = URI.join(url, response["Location"]).to_s
+        url = next_url
         next
       end
-      return response if code == 200
+      log("Download hop #{hops.size}: #{hops.last}")
+      return response if code == 200 || (options[:pass_codes] || []).include?(code)
 
       hint = (code == 401 || code == 403) ? " The file may require authentication or may no longer be shared." : ""
-      raise HandlerError, "Could not download #{description}: HTTP #{code} from #{uri.host}.#{hint}"
+      # Only worth listing when there was at least one redirect; a single hop
+      # is already described by the message itself.
+      chain = hops.size > 1 ? " #{redirect_chain(hops)}" : ""
+      raise HandlerError, "Could not download #{description}: HTTP #{code} from #{uri.host}.#{hint}#{chain}"
     end
+  end
+
+  # Describes the hops of a download for an error message, for example
+  # "Redirect chain: HTTP 302 from https://a/x (with Kinetic credentials) -> HTTP 302 from https://b/y (no credentials) -> https://a/x".
+  # next_url is the redirect target that was not followed, if any.
+  def redirect_chain(hops, next_url = nil)
+    steps = hops.dup
+    steps << redact_url(next_url) if next_url
+    "Redirect chain: #{steps.join(" -> ")}"
   end
 
   ##############################################################################
@@ -1355,6 +1411,19 @@ class AzureNotificationTemplateSendV1
     "#{uri.scheme}://#{uri.host}#{default_port ? "" : ":#{uri.port}"}"
   end
 
+  # Returns the URL without its query string, fragment, or user info.  Query
+  # strings can hold signatures and tokens (presigned storage links, SSO
+  # requests), so download URLs are passed through this before they are logged
+  # or included in an error message.
+  def redact_url(url)
+    uri = URI.parse(url.to_s)
+    return "[relative URL #{uri.path}]" if uri.host.nil?
+    redacted = "#{origin(url.to_s)}#{uri.path}"
+    uri.query.to_s.empty? ? redacted : "#{redacted}?[query removed]"
+  rescue URI::InvalidURIError
+    "[URL that could not be parsed]"
+  end
+
   def media_type(response)
     type = response["Content-Type"].to_s.split(";").first.to_s.strip
     type.empty? ? "application/octet-stream" : type
@@ -1409,7 +1478,8 @@ class AzureNotificationTemplateSendV1
   end
 
   # Never pass the client secret, access tokens, upload URLs, recipient
-  # addresses, or body content to this method.
+  # addresses, or body content to this method.  Download URLs may only be
+  # passed after redact_url has removed their query strings.
   def log(message)
     puts "[azure_notification_template_send_v1] #{message}" if @debug_logging_enabled
   end
