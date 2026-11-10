@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taskDefinition id="azure_notification_template_send" name="Azure Notification Template Send" schema_version="1.0" version="1">
+  <author>support@kineticdata.com</author>
+  <description>Builds an email from a Kinetic notification template (snippets, replacement values, dates, inline images, and attachments) and sends it through Microsoft Graph.</description>
+  <helpurl></helpurl>
+  <visible>true</visible>
+  <deferrable>false</deferrable>
+  <parameters>
+    <parameter id="error_handling" label="Error Handling" required="true" tooltip="Determine what to return if an error is encountered." menu="Error Message,Raise Error">Error Message</parameter>
+    <parameter id="space_slug" label="Space Slug" required="false" tooltip="Slug of the space containing the notification templates. Leave blank to use the handler's space_slug property."></parameter>
+    <parameter id="recipient_json" label="Recipient Json Object" required="true" tooltip="A JSON object such as {&quot;smtpaddress&quot;:{&quot;to&quot;:&quot;to@example.com&quot;,&quot;cc&quot;:&quot;cc@example.com&quot;,&quot;bcc&quot;:&quot;bcc@example.com&quot;},&quot;language&quot;:&quot;en&quot;,&quot;region&quot;:&quot;&quot;,&quot;email notifications&quot;:&quot;yes&quot;}, or an email address."></parameter>
+    <parameter id="notification_template_name" label="Notification Template Name" required="true" tooltip="Name of an Active notification template."></parameter>
+    <parameter id="replacement_values" label="Replacement Values" required="false" tooltip="JSON object of replacement values, e.g. {&quot;values&quot;:{...},&quot;form&quot;:{...},&quot;vars&quot;:{...}}. ${key('name')} in the template is replaced with the value at key, name."></parameter>
+    <parameter id="submission_id" label="Submission Id" required="false" tooltip="Id of the submission whose attachment fields are referenced by the template's Attachments field."></parameter>
+    <parameter id="from_override" label="From (Override)" required="false" tooltip="Sender mailbox to use instead of the handler's configured from_address. Leave blank to use the configured address."></parameter>
+  </parameters>
+  <handler name="azure_notification_template_send" version="1">
+    <infos>
+      <info name="tenant_id">&lt;%= @info['tenant_id'] %&gt;</info>
+      <info name="client_id">&lt;%= @info['client_id'] %&gt;</info>
+      <info name="client_secret">&lt;%= @info['client_secret'] %&gt;</info>
+      <info name="azure_cloud">&lt;%= @info['azure_cloud'] %&gt;</info>
+      <info name="from_address">&lt;%= @info['from_address'] %&gt;</info>
+      <info name="api_server">&lt;%= @info['api_server'] %&gt;</info>
+      <info name="api_username">&lt;%= @info['api_username'] %&gt;</info>
+      <info name="api_password">&lt;%= @info['api_password'] %&gt;</info>
+      <info name="space_slug">&lt;%= @info['space_slug'] %&gt;</info>
+      <info name="kapp_slug">&lt;%= @info['kapp_slug'] %&gt;</info>
+      <info name="form_slug_data">&lt;%= @info['form_slug_data'] %&gt;</info>
+      <info name="form_slug_dates">&lt;%= @info['form_slug_dates'] %&gt;</info>
+      <info name="template_attachments_field">&lt;%= @info['template_attachments_field'] %&gt;</info>
+      <info name="max_attachment_size_mb">&lt;%= @info['max_attachment_size_mb'] %&gt;</info>
+      <info name="enable_debug_logging">&lt;%= @info['enable_debug_logging'] %&gt;</info>
+    </infos>
+    <parameters>
+      <parameter name="error_handling">&lt;%= @parameters['error_handling'] %&gt;</parameter>
+      <parameter name="space_slug">&lt;%= @parameters['space_slug'] %&gt;</parameter>
+      <parameter name="recipient_json">&lt;%= @parameters['recipient_json'] %&gt;</parameter>
+      <parameter name="notification_template_name">&lt;%= @parameters['notification_template_name'] %&gt;</parameter>
+      <parameter name="replacement_values">&lt;%= @parameters['replacement_values'] %&gt;</parameter>
+      <parameter name="submission_id">&lt;%= @parameters['submission_id'] %&gt;</parameter>
+      <parameter name="from_override">&lt;%= @parameters['from_override'] %&gt;</parameter>
+    </parameters>
+  </handler>
+  <results format="xml">
+    <result name="Handler Error Message"/>
+    <result name="Email Id"/>
+    <result name="Status"/>
+    <result name="From Address"/>
+    <result name="Attachment Count"/>
+    <result name="Response Code"/>
+  </results>
+</taskDefinition>

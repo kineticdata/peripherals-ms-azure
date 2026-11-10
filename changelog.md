@@ -31,3 +31,9 @@ Azure [bridge-adapters] (2024-02-20)
     * updated snakeyaml version due to vulnerability
   * [kinetic-bridgehub-adapter-azure] v1.0.5
     * updated org.json version due to vulnerability
+
+Azure [handlers] (2026-10-01)
+  * [azure_email_send] v1
+    * Initial commit. Sends email through the Microsoft Graph sendMail API.
+  * [azure_notification_template_send] v1
+    * Initial commit. Builds an email from a Kinetic notification template and sends it, with template and submission attachments, through Microsoft Graph.
